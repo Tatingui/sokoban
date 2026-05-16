@@ -1,11 +1,12 @@
 package utilidades;
 
-import modelo.ElementoTablero;
+// Importamos todas las clases del modelo para que la fábrica las conozca
+import modelo.*;
 
 public class FabricaDeEntidades {
     private static FabricaDeEntidades instancia;
 
-    // Constructor privado para evitar que usen "new" fuera de esta clase
+    // Constructor privado (Regala el comportamiento Singleton)
     private FabricaDeEntidades() {}
 
     // Punto de acceso global al Singleton
@@ -16,9 +17,25 @@ public class FabricaDeEntidades {
         return instancia;
     }
 
-    // Método que usará el lector de mapas más adelante
+    /**
+     * Factory Method Parametrizado
+     * Recibe un caracter del archivo de texto y fabrica el objeto del modelo correspondiente.
+     */
     public ElementoTablero crearEntidad(char caracter) {
-        // Acá irá el switch/if-else que creará las paredes, cajas, etc.
-        return null;
+        switch (caracter) {
+            case 'P':
+                return new Pared();
+            case 'S':
+                return new Suelo();
+            case 'J':
+                return new Jugador();
+            case 'C':
+                return new Caja();
+            case 'D':
+                return new Destino();
+            default:
+                // Si viene un caracter desconocido, por seguridad devolvemos suelo vacío
+                return new Suelo();
+        }
     }
 }
