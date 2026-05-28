@@ -1,38 +1,34 @@
+// ConstructorTablero.java
 package utilidades;
 
-import modelo.ElementoTablero;
-import modelo.Jugador;
-import modelo.Tablero;
+import modelo.*;
 
 public class ConstructorTablero {
+
     private Tablero tablero;
-    private FabricaDeEntidades fabrica;
+    private final FabricaDeEntidades fabrica;
 
     public ConstructorTablero() {
         this.tablero = new Tablero();
-        this.fabrica = FabricaDeEntidades.getInstancia(); // Usamos nuestro Singleton
+        this.fabrica = FabricaDeEntidades.getInstancia();
     }
 
     public void definirTamanio(int filas, int columnas) {
         tablero.inicializarGrilla(filas, columnas);
     }
 
-    public void procesarFila(int fila, String lineaTexto) {
-        for (int columna = 0; columna < lineaTexto.length(); columna++) {
-            char c = lineaTexto.charAt(columna);
+    public void procesarFila(int fila, String[] tokens) {
+        for (int columna = 0; columna < tokens.length; columna++) {
+            String token = tokens[columna].trim();
+            Entidad entidad = fabrica.crearEntidad(token);
+            tablero.colocarElemento(fila, columna, entidad);
 
-            // Usamos el Factory Method para crear el elemento
-            ElementoTablero elemento = fabrica.crearEntidad(c);
-            tablero.colocarElemento(fila, columna, elemento);
-
-            // Si el elemento creado es el jugador, guardamos sus coordenadas
-            if (elemento instanceof Jugador) {
+            if (entidad instanceof Sokoban) {
                 tablero.setPosicionJugador(fila, columna);
             }
         }
     }
 
-    // Método final que devuelve el objeto complejo ya construido
     public Tablero obtenerTablero() {
         return this.tablero;
     }

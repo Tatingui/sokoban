@@ -1,3 +1,4 @@
+// LectorDeNivel.java
 package utilidades;
 
 import modelo.Tablero;
@@ -10,37 +11,33 @@ import java.util.List;
 public class LectorDeNivel {
 
     public Tablero cargarNivel(String rutaArchivo) {
-        ConstructorTablero constructor = new ConstructorTablero();
-        List<String> lineas = new ArrayList<>();
+        List<String[]> filas = new ArrayList<>();
 
-        // Leemos todo el archivo txt y guardamos las líneas
         try (BufferedReader br = new BufferedReader(new FileReader(rutaArchivo))) {
             String linea;
             while ((linea = br.readLine()) != null) {
-                lineas.add(linea);
+                if (!linea.isBlank()) {
+                    // Cada celda es un token separado por espacio
+                    filas.add(linea.trim().split(" "));
+                }
             }
         } catch (IOException e) {
-            System.out.println("Error al leer el archivo de nivel: " + e.getMessage());
+            System.out.println("Error al leer el nivel: " + e.getMessage());
             return null;
         }
 
-        if (lineas.isEmpty()) {
-            return null;
+        if (filas.isEmpty()) return null;
+
+        int numFilas = filas.size();
+        int numColumnas = filas.get(0).length;
+
+        ConstructorTablero constructor = new ConstructorTablero();
+        constructor.definirTamanio(numFilas, numColumnas);
+
+        for (int i = 0; i < numFilas; i++) {
+            constructor.procesarFila(i, filas.get(i));
         }
 
-        // Calculamos el tamaño del tablero basándonos en el txt
-        int filas = lineas.size();
-        int columnas = lineas.get(0).length();
-
-        // 1. El Builder define el tamaño de la matriz
-        constructor.definirTamanio(filas, columnas);
-
-        // 2. El Builder procesa fila por fila usando la Fábrica internamente
-        for (int i = 0; i < filas; i++) {
-            constructor.procesarFila(i, lineas.get(i));
-        }
-
-        // 3. Devolvemos el producto complejo terminado
         return constructor.obtenerTablero();
     }
 }

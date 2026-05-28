@@ -1,25 +1,26 @@
-import modelo.ElementoTablero;
+// Main.java
 import modelo.Tablero;
 import utilidades.LectorDeNivel;
+import vista.VentanaPrincipal;
+import javax.swing.SwingUtilities;
 
 public class Main {
     public static void main(String[] args) {
+        // Resuelve la ruta relativa desde donde se ejecuta el proceso
+        String ruta = System.getProperty("user.dir") + "/sokoban/niveles/nivel1.txt";
+        System.out.println("Buscando nivel en: " + ruta); // Para debug
+
         LectorDeNivel lector = new LectorDeNivel();
+        Tablero tablero = lector.cargarNivel(ruta);
 
-        // Le pasamos la ruta de nuestro txt
-        Tablero nivelPrueba = lector.cargarNivel("niveles/nivel1.txt");
-
-        if (nivelPrueba != null) {
-            System.out.println("¡El nivel se cargó correctamente usando Factory Method, Singleton y Builder!");
-            ElementoTablero[][] grilla = nivelPrueba.getGrilla();
-
-            // Imprimimos la matriz en consola para verificar
-            for (int i = 0; i < grilla.length; i++) {
-                for (int j = 0; j < grilla[i].length; j++) {
-                    System.out.print(grilla[i][j].getClass().getSimpleName().charAt(0) + " ");
-                }
-                System.out.println();
-            }
+        if (tablero == null) {
+            System.out.println("Error al cargar el nivel.");
+            return;
         }
+
+        SwingUtilities.invokeLater(() -> {
+            VentanaPrincipal ventana = new VentanaPrincipal(tablero);
+            ventana.setVisible(true);
+        });
     }
 }

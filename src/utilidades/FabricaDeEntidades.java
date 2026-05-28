@@ -1,15 +1,34 @@
 package utilidades;
 
-// Importamos todas las clases del modelo para que la fábrica las conozca
 import modelo.*;
+import java.util.HashMap;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Supplier;
 
 public class FabricaDeEntidades {
+
     private static FabricaDeEntidades instancia;
+    private final Map<String, Supplier<Entidad>> registro;
 
-    // Constructor privado (Regala el comportamiento Singleton)
-    private FabricaDeEntidades() {}
+    private FabricaDeEntidades() {
+        registro = new HashMap<>();
 
-    // Punto de acceso global al Singleton
+        // Estáticas simples
+        registro.put("P",  Pared::new);
+        registro.put("S",  SueloNormal::new);
+
+        // Dinámicas simples
+        registro.put("J",  Sokoban::new);
+        registro.put("C",  CajaNormal::new);
+
+        // Con parámetros — usamos lambdas
+        registro.put("F",  () -> new CajaFragil(3));
+
+        // Muros cerrados y cerrojos se parsean aparte
+        // porque llevan canal en el token (ej: "MC-AZUL", "X-ROJO-EXC")
+    }
+
     public static FabricaDeEntidades getInstancia() {
         if (instancia == null) {
             instancia = new FabricaDeEntidades();
@@ -17,25 +36,16 @@ public class FabricaDeEntidades {
         return instancia;
     }
 
-    /**
-     * Factory Method Parametrizado
-     * Recibe un caracter del archivo de texto y fabrica el objeto del modelo correspondiente.
-     */
-    public ElementoTablero crearEntidad(char caracter) {
-        switch (caracter) {
-            case 'P':
-                return new Pared();
-            case 'S':
-                return new Suelo();
-            case 'J':
-                return new Jugador();
-            case 'C':
-                return new Caja();
-            case 'D':
-                return new Destino();
-            default:
-                // Si viene un caracter desconocido, por seguridad devolvemos suelo vacío
-                return new Suelo();
-        }
+    public Entidad crearEntidad(String token) {
+        // Intenta parsear tokens compuestos con canal
+        Entidad entidad = ParserDeToken.parsear(token);
+        if (entidad != null) return entidad;
+    
+        // Token simple: busca en el registro
+        Supplier<Entidad> constructor = registro.get(token);
+        if (constructor != null) return constructor.get();
+    
+        System.out.println("Token desconocido: '" + token + "', se reemplaza por SueloNormal.");
+        return new SueloNormal();
     }
 }

@@ -1,12 +1,21 @@
 package vista;
 
+import modelo.Tablero;
 import javax.swing.JFrame;
 
 public class VentanaPrincipal extends JFrame {
-    public VentanaPrincipal() {
-        setTitle("Sokoban - TPI PDS");
-        setSize(800, 600);
+
+    private PanelTablero panelTablero;
+
+    public VentanaPrincipal(Tablero tablero) {
+        setTitle("Sokoban - Javaneta");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null); // Centra la ventana en la pantalla
+        setResizable(false);
+
+        panelTablero = new PanelTablero(tablero);
+        add(panelTablero);
+
+        pack(); // La ventana se ajusta al tamaño del panel
+        setLocationRelativeTo(null); // Centra en pantalla
     }
 }

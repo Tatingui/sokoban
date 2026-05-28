@@ -1,8 +1,7 @@
+// Pared.java
 package modelo;
 
-public class Pared implements ElementoTablero {
+public class Pared extends EntidadEstatica {
     @Override
-    public boolean esTransitable() {
-        return false; // Las paredes bloquean el paso por completo
-    }
+    public boolean esTransitable() { return false; }
 }
