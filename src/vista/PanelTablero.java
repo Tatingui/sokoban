@@ -106,13 +106,10 @@ public class PanelTablero extends JPanel {
             dibujarImagen(g, "cerrojo_" + cc.getIdCanal(), x, y);
             if (cc.estaOcupado()) dibujarEntidadDinamica(g, cc.getObjetoEncima(), x, y);
 
-        } else if (entidad instanceof MuroCerrado) {
-            MuroCerrado mc = (MuroCerrado) entidad;
-            dibujarImagen(g, "muroCerrado_" + mc.getIdCanal(), x, y);
-
-        } else if (entidad instanceof MuroAbierto) {
-            MuroAbierto ma = (MuroAbierto) entidad;
-            dibujarImagen(g, "muroAbierto_" + ma.getIdCanal(), x, y);
+        } else if (entidad instanceof Muro) {
+            Muro muro = (Muro) entidad;
+            String prefijo = muro.estaAbierto() ? "muroAbierto_" : "muroCerrado_";
+            dibujarImagen(g, prefijo + muro.getIdCanal(), x, y);
 
         } else if (entidad instanceof Sokoban) {
             dibujarImagen(g, "sokoban", x, y);

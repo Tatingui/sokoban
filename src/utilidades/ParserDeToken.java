@@ -7,8 +7,15 @@ import java.util.Arrays;
 public class ParserDeToken {
 
     public static Entidad parsear(String token) {
+        // Muro abierto (A-CANAL): nace transitable.
+        if (token.startsWith("A-"))
+            return new Muro(token.substring(2), true);
+
+        // Muro cerrado: nuevo formato M-CANAL y legado MC-CANAL.
         if (token.startsWith("MC-"))
-            return new MuroCerrado(token.substring(3));
+            return new Muro(token.substring(3));
+        if (token.startsWith("M-"))
+            return new Muro(token.substring(2));
 
         if (token.startsWith("X-")) {
             boolean exclusivo = token.endsWith("-EXC");

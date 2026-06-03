@@ -4,6 +4,7 @@ public class Tablero {
     private Entidad[][] grilla;
     private int jugadorFila;
     private int jugadorColumna;
+    private final GestorDeCanales gestorDeCanales = new GestorDeCanales();
 
     public void inicializarGrilla(int filas, int columnas) {
         grilla = new Entidad[filas][columnas];
@@ -21,4 +22,5 @@ public class Tablero {
     public int getJugadorFila() { return jugadorFila; }
     public int getJugadorColumna() { return jugadorColumna; }
     public Entidad[][] getGrilla() { return grilla; }
+    public GestorDeCanales getGestorDeCanales() { return gestorDeCanales; }
 }
