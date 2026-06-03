@@ -1,38 +1,47 @@
+// ConstructorTablero.java
 package utilidades;
 
-import modelo.ElementoTablero;
-import modelo.Jugador;
-import modelo.Tablero;
+import modelo.*;
 
 public class ConstructorTablero {
+
     private Tablero tablero;
-    private FabricaDeEntidades fabrica;
+    private final FabricaDeEntidades fabrica;
 
     public ConstructorTablero() {
         this.tablero = new Tablero();
-        this.fabrica = FabricaDeEntidades.getInstancia(); // Usamos nuestro Singleton
+        this.fabrica = FabricaDeEntidades.getInstancia();
     }
 
     public void definirTamanio(int filas, int columnas) {
         tablero.inicializarGrilla(filas, columnas);
     }
 
-    public void procesarFila(int fila, String lineaTexto) {
-        for (int columna = 0; columna < lineaTexto.length(); columna++) {
-            char c = lineaTexto.charAt(columna);
-
-            // Usamos el Factory Method para crear el elemento
-            ElementoTablero elemento = fabrica.crearEntidad(c);
-            tablero.colocarElemento(fila, columna, elemento);
-
-            // Si el elemento creado es el jugador, guardamos sus coordenadas
-            if (elemento instanceof Jugador) {
-                tablero.setPosicionJugador(fila, columna);
-            }
+    public void procesarFila(int fila, String[] tokens) {
+        for (int columna = 0; columna < tokens.length; columna++) {
+            String token = tokens[columna].trim();
+            Entidad entidad = fabrica.crearEntidad(token);
+            tablero.colocarElemento(fila, columna, entidad);
+            registrarSegunTipo(entidad, fila, columna);
         }
     }
 
-    // Método final que devuelve el objeto complejo ya construido
+    /**
+     * Conecta la entidad recien creada con los subsistemas del tablero:
+     * registra cerrojos y muros en el gestor de canales (cableado del patron
+     * Observer) y fija la posicion inicial del jugador.
+     */
+    private void registrarSegunTipo(Entidad entidad, int fila, int columna) {
+        GestorDeCanales gestor = tablero.getGestorDeCanales();
+        if (entidad instanceof CasilleroCerrojo) {
+            gestor.registrarCerrojo((CasilleroCerrojo) entidad);
+        } else if (entidad instanceof Muro) {
+            gestor.registrarMuro((Muro) entidad);
+        } else if (entidad instanceof Sokoban) {
+            tablero.setPosicionJugador(fila, columna);
+        }
+    }
+
     public Tablero obtenerTablero() {
         return this.tablero;
     }
