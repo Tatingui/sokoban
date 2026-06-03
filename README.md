@@ -9,9 +9,25 @@ El proyecto se encuentra dividido en los paquetes `modelo`, `vista`, `controlado
 * **Factory Method:** Centraliza la lógica de conversión de caracteres en entidades del modelo.
 * **Builder:** Separa la lectura e interpretación del archivo de texto plano de la representación final del objeto complejo Tablero.
 
+## Patrón de Comportamiento Aplicado
+
+Para el sistema de llaves, cerrojos y muros se aplicó el patrón **Observer**, desacoplando los muros de la lógica que decide cuándo deben abrirse:
+
+* **`Canal` (Subject):** Agrupa los cerrojos y muros de un mismo canal identificado (ej: `AZUL`). Reevalúa su estado ante cada cambio y notifica únicamente cuando hay una transición real (abrir/cerrar), evitando notificaciones redundantes.
+* **`ObservadorCanal` (Observer):** Interfaz con `alAbrirCanal()` / `alCerrarCanal()`.
+* **`Muro` (Concrete Observer):** Muta su transitabilidad al ser notificado. Una única clase con estado reemplaza a las antiguas `MuroCerrado` y `MuroAbierto`, eliminando la duplicación.
+* **`CasilleroCerrojo`:** Reporta su activación al canal cuando se le coloca encima una `CajaLlave` del mismo canal. Soporta modo exclusivo.
+* **`GestorDeCanales`:** Centraliza los canales del tablero (`cerrojosPorCanal` / `murosPorCanal`) y coordina la supresión de otros canales en los cerrojos exclusivos.
+
+Regla de apertura: un canal abre sus muros sólo cuando **todos** sus cerrojos están activados; si un cerrojo se desactiva, los muros vuelven a cerrarse.
+
 ## Guía para la Creación de Mapas Propios
 
 El sistema es capaz de procesar cualquier mapa personalizado estructurado en un archivo de texto plano (.txt). Para que el juego interprete correctamente los elementos, se debe respetar el siguiente diccionario de caracteres:
+
+Cada celda se escribe como un token separado por espacios. Los tokens simples son una sola letra; el sistema de llaves usa tokens compuestos con el canal (ej: `AZUL`, `ROJA`, `VERDE`).
+
+**Tokens simples:**
 
 * `P` : Pared (Bloque estático que delimita el mapa y no puede ser atravesado)
 * `S` : Suelo (Espacio vacío por el cual el jugador y las cajas se mueven libremente)
@@ -19,17 +35,42 @@ El sistema es capaz de procesar cualquier mapa personalizado estructurado en un 
 * `C` : Caja normal (Bloque estándar que debe ser empujado hacia los destinos)
 * `D` : Casilla destino (Ubicación donde deben colocarse las cajas para ganar)
 * `F` : Caja frágil (Caja con límite de desplazamientos)
-* `L` : Caja llave (Caja especial utilizada para abrir casilleros cerrojo)
 * `R` : Terreno resbaladizo (Superficie que desliza los objetos hasta un tope)
-* `X` : Casillero cerrojo (Bloqueo que se libera al superponerle la caja llave)
-* `M` : Muro cerrado / `A` : Muro abierto (Puertas temporales)
+
+**Tokens por canal (sistema llave-cerrojo-muro):**
+
+* `L-[CANAL]` : Caja llave de un canal (ej: `L-AZUL`). Multicanal con `+` (ej: `L-AZUL+ROJA`)
+* `X-[CANAL]` : Casillero cerrojo. Exclusivo con el sufijo `-EXC` (ej: `X-AZUL-EXC`)
+* `M-[CANAL]` : Muro cerrado (también se acepta el formato legado `MC-[CANAL]`)
+* `A-[CANAL]` : Muro abierto
+
+> Nota: `Muro` es una única entidad con estado. El mismo objeto pasa de cerrado a abierto cuando su canal se activa (patrón Observer); no son dos clases distintas.
 
 ### Requisito importante para mapas personalizados:
-Todos los archivos de nivel deben guardarse dentro del directorio `/niveles`. Además, para evitar errores de desbordamiento en la matriz, el mapa debe ser perfectamente rectangular (todas las líneas del archivo de texto deben poseer exactamente la misma cantidad de caracteres).
+Todos los archivos de nivel deben guardarse dentro del directorio `/niveles`. Además, para evitar errores de desbordamiento en la matriz, el mapa debe ser perfectamente rectangular (todas las filas deben poseer exactamente la misma cantidad de tokens). Podés tomar como referencia el nivel de demostración `niveles/nivel_cerrojos.txt`.
 
 ## Instrucciones de Ejecución
 
-1. Clonar el repositorio localmente.
-2. Abrir el proyecto en IntelliJ IDEA.
-3. Asegurarse de tener configurado un JDK versión 17 o superior.
-4. Ejecutar la clase `Main.java` ubicada en la raíz del directorio `src`.
+Requisito común: tener instalado un **JDK 17 o superior** (el proyecto se valida con JDK 21).
+
+> Importante: `Main.java` resuelve las rutas de niveles e imágenes como `user.dir + "/sokoban/..."`, por lo que el **directorio de trabajo del proceso debe ser la carpeta que contiene al repositorio** (la carpeta padre de `sokoban`).
+
+### IntelliJ IDEA
+1. Clonar el repositorio y abrirlo en IntelliJ IDEA.
+2. Configurar el SDK del proyecto en JDK 17+.
+3. Ejecutar la clase `Main.java` ubicada en `src/`.
+
+### Visual Studio Code
+1. Instalar el **Extension Pack for Java** (Microsoft).
+2. Abrir la carpeta del repositorio.
+3. Abrir `src/Main.java` y usar **Run** (▶) sobre `main`, o presionar `F5`.
+
+### Por línea de comandos
+Compilar dentro del repo y ejecutar **desde la carpeta padre** (por la nota anterior sobre el directorio de trabajo):
+```bash
+# parado en la carpeta del repo (sokoban/)
+javac -d build $(find src -name "*.java")
+# subir un nivel y ejecutar
+cd ..
+java -cp sokoban/build Main
+```
