@@ -18,6 +18,10 @@ public class FabricaDeEntidades {
         registro.put("P",  Pared::new);
         registro.put("S",  SueloNormal::new);
 
+        // Suelos especiales (con agregación de objetoEncima)
+        registro.put("D",  Destino::new);
+        registro.put("R",  SueloResbaladizo::new);
+
         // Dinámicas simples
         registro.put("J",  Sokoban::new);
         registro.put("C",  CajaNormal::new);
