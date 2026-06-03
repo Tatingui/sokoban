@@ -1,6 +1,8 @@
 package pruebas;
 
 import modelo.Canal;
+import modelo.Destino;
+import modelo.Entidad;
 import modelo.GestorDeCanales;
 import modelo.Tablero;
 import utilidades.LectorDeNivel;
@@ -24,13 +26,29 @@ public class PruebaConstruccionNivel {
         GestorDeCanales gestor = tablero.getGestorDeCanales();
         Canal azul = gestor.obtener("AZUL");
 
-        boolean ok = azul != null && !azul.estaAbierto();
-        System.out.println((ok ? "[OK]   " : "[FALLA] ")
+        boolean canalOk = azul != null && !azul.estaAbierto();
+        System.out.println((canalOk ? "[OK]   " : "[FALLA] ")
                 + "Construccion: canal AZUL registrado y muro cerrado al inicio");
 
-        if (!ok) {
+        // El token 'D' debe instanciarse como Destino (antes caia a SueloNormal).
+        boolean destinoOk = contieneDestino(tablero);
+        System.out.println((destinoOk ? "[OK]   " : "[FALLA] ")
+                + "Construccion: el token 'D' se instancia como Destino");
+
+        if (!canalOk || !destinoOk) {
             System.exit(1);
         }
         System.out.println("PRUEBA DE CONSTRUCCION OK");
+    }
+
+    private static boolean contieneDestino(Tablero tablero) {
+        for (Entidad[] filaEntidades : tablero.getGrilla()) {
+            for (Entidad entidad : filaEntidades) {
+                if (entidad instanceof Destino) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
