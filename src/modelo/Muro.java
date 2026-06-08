@@ -45,4 +45,10 @@ public class Muro extends EntidadEstatica implements ObservadorCanal {
     public boolean esTransitable() {
         return abierto;
     }
+
+    @Override
+    public String getClaveSprite() {
+        String prefijo = estaAbierto() ? "muroAbierto_" : "muroCerrado_";
+        return prefijo + idCanal;
+    }
 }

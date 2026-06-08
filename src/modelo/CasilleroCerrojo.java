@@ -87,4 +87,9 @@ public class CasilleroCerrojo extends SueloEspecial {
             canal.evaluarEstado();
         }
     }
+
+    @Override
+    public String getClaveSprite() {
+        return "casilleroCerrojo_" + idCanal;
+    }
 }

@@ -11,4 +11,10 @@ public class CajaFragil extends Caja {
     public void reducirResistencia() { this.resistencia--; }
     public boolean estaRota() { return resistencia <= 0; }
     public int getResistencia() { return resistencia; }
+
+    @Override
+    public String getClaveSprite() {
+        return "cajaFragil";
+    }
 }
+
