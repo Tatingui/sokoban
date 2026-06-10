@@ -9,7 +9,7 @@ import java.util.function.Supplier;
 public class FabricaDeEntidades {
 
     private static FabricaDeEntidades instancia;
-    private final Map<String, Supplier<Entidad>> registro;
+    private final Map<String, Supplier<? extends Entidad>> registro;
 
     private FabricaDeEntidades() {
         registro = new HashMap<>();
@@ -46,7 +46,7 @@ public class FabricaDeEntidades {
         if (entidad != null) return entidad;
     
         // Token simple: busca en el registro
-        Supplier<Entidad> constructor = registro.get(token);
+        Supplier<? extends Entidad> constructor = registro.get(token);
         if (constructor != null) return constructor.get();
     
         System.out.println("Token desconocido: '" + token + "', se reemplaza por SueloNormal.");

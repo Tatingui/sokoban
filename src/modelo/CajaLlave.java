@@ -15,4 +15,9 @@ public class CajaLlave extends Caja {
     }
 
     public List<String> getCanales() { return canales; }
+
+    @Override
+    public String getClaveImagen() {
+        return canales.size() == 1 ? "llave_" + canales.get(0) : "llave_MULTICANAL";
+    }
 }

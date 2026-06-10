@@ -87,4 +87,7 @@ public class CasilleroCerrojo extends SueloEspecial {
             canal.evaluarEstado();
         }
     }
+
+    @Override
+    public String getClaveImagen() { return "cerrojo_" + idCanal; }
 }

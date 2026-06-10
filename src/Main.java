@@ -1,3 +1,4 @@
+
 // Main.java
 import modelo.Tablero;
 import utilidades.LectorDeNivel;
@@ -7,7 +8,7 @@ import javax.swing.SwingUtilities;
 public class Main {
     public static void main(String[] args) {
         // Resuelve la ruta relativa desde donde se ejecuta el proceso
-        String ruta = System.getProperty("user.dir") + "/sokoban/niveles/nivel1.txt";
+        String ruta = System.getProperty("user.dir") + "/niveles/nivel1.txt";
         System.out.println("Buscando nivel en: " + ruta); // Para debug
 
         LectorDeNivel lector = new LectorDeNivel();

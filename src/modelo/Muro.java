@@ -45,4 +45,9 @@ public class Muro extends EntidadEstatica implements ObservadorCanal {
     public boolean esTransitable() {
         return abierto;
     }
+
+    @Override
+    public String getClaveImagen() {
+        return (abierto ? "muroAbierto_" : "muroCerrado_") + idCanal;
+    }
 }
