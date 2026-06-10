@@ -23,4 +23,5 @@ public class CajaLlave extends Caja {
         } else {
             return "cajaLlave_multi";
         }
+    }
 }

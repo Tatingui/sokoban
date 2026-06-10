@@ -37,8 +37,9 @@ public class ConstructorTablero {
             gestor.registrarCerrojo((CasilleroCerrojo) entidad);
         } else if (entidad instanceof Muro) {
             gestor.registrarMuro((Muro) entidad);
-        } else if (entidad instanceof Sokoban) {
+        } else if (entidad instanceof Sokoban sokoban) {
             tablero.setPosicionJugador(fila, columna);
+            tablero.setJugador(sokoban);
         }
     }
 

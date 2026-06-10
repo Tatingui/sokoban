@@ -7,8 +7,11 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.IntConsumer;
 
 public class PanelTablero extends JPanel {
 
@@ -26,6 +29,16 @@ public class PanelTablero extends JPanel {
         int cols = tablero.getGrilla()[0].length;
         int filas = tablero.getGrilla().length;
         setPreferredSize(new Dimension(cols * TILE_SIZE, filas * TILE_SIZE));
+        setFocusable(true);
+    }
+
+    public void configurarControles(IntConsumer alPresionarTecla) {
+        addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                alPresionarTecla.accept(e.getKeyCode());
+            }
+        });
     }
 
     private void cargarImagenes() {
