@@ -9,4 +9,6 @@ public class Sokoban extends EntidadDinamica {
 
     @Override
     public String getClaveImagen() { return "sokoban"; }
+    
 }
+
