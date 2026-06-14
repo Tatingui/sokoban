@@ -2,13 +2,14 @@ package utilidades;
 
 import modelo.*;
 import java.util.HashMap;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Supplier;
 
 public class FabricaDeEntidades {
 
-    private static FabricaDeEntidades instancia;
+    // Singleton Thread-safe mediante Eager Initialization (feature/memento-undo)
+    private static final FabricaDeEntidades INSTANCIA = new FabricaDeEntidades();
+
     private final Map<String, Supplier<? extends Entidad>> registro;
 
     private FabricaDeEntidades() {
@@ -28,28 +29,22 @@ public class FabricaDeEntidades {
 
         // Con parámetros — usamos lambdas
         registro.put("F",  () -> new CajaFragil(3));
-
-        // Muros cerrados y cerrojos se parsean aparte
-        // porque llevan canal en el token (ej: "MC-AZUL", "X-ROJO-EXC")
     }
 
     public static FabricaDeEntidades getInstancia() {
-        if (instancia == null) {
-            instancia = new FabricaDeEntidades();
-        }
-        return instancia;
+        return INSTANCIA;
     }
 
     public Entidad crearEntidad(String token) {
-        // Intenta parsear tokens compuestos con canal
         Entidad entidad = ParserDeToken.parsear(token);
         if (entidad != null) return entidad;
-    
+
         // Token simple: busca en el registro
         Supplier<? extends Entidad> constructor = registro.get(token);
         if (constructor != null) return constructor.get();
-    
-        System.out.println("Token desconocido: '" + token + "', se reemplaza por SueloNormal.");
-        return new SueloNormal();
+
+        // En vez de un sysout silencioso, lanzamos un error explícito si el mapa está roto
+        throw new IllegalArgumentException(
+                "Error en la configuración del mapa: El token '" + token + "' no es válido.");
     }
 }

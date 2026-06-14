@@ -1,5 +1,5 @@
-
 // Main.java
+import controlador.ControladorJuego;
 import modelo.Tablero;
 import utilidades.LectorDeNivel;
 import vista.VentanaPrincipal;
@@ -21,7 +21,8 @@ public class Main {
 
         SwingUtilities.invokeLater(() -> {
             VentanaPrincipal ventana = new VentanaPrincipal(tablero);
-            ventana.setVisible(true);
+            ControladorJuego controlador = new ControladorJuego(ventana, tablero);
+            controlador.iniciarJuego();
         });
     }
 }
