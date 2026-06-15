@@ -3,26 +3,7 @@ package vista;
 import javax.swing.*;
 import java.awt.*;
 
-/**
- * PanelHUD — Heads-Up Display del juego Sokoban.
- *
- * Muestra en tiempo real:
- *  - Tiempo transcurrido (se actualiza con un Timer de Swing)
- *  - Movimientos del jugador
- *  - Cajas colocadas en destino vs total de cajas
- *  - Retrocesos (undos) disponibles
- *
- * Cómo integrarlo en VentanaPrincipal:
- *   panelHUD = new PanelHUD(totalCajas, maxRetrocesos);
- *   add(panelHUD, BorderLayout.NORTH);  // o SOUTH, como prefieras
- *
- * Cómo actualizar los datos desde el Controlador:
- *   panelHUD.setMovimientos(n);
- *   panelHUD.setCajasEnDestino(n);
- *   panelHUD.setRetrocesosDisponibles(n);
- *   panelHUD.iniciarTiempo();   // al comenzar la partida
- *   panelHUD.detenerTiempo();   // al ganar o pausar
- */
+
 public class PanelHUD extends JPanel {
 
     // ── Colores del tema ─────────────────────────────────────────────────────
