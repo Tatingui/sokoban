@@ -1,18 +1,5 @@
 package modelo;
 
-/**
- * Muro gobernado por un canal de cerrojos. Rol Concrete Observer del patrón
- * Observer: el {@link Canal} lo notifica para que mute su propio estado entre
- * cerrado (infranqueable) y abierto (transitable), sin necesidad de
- * reemplazar la entidad en la grilla.
- *
- * Unifica lo que antes eran dos clases casi idénticas (MuroCerrado /
- * MuroAbierto), eliminando la duplicación: el estado se modela con un boolean.
- *
- * Memento — ruta silenciosa (package-private):
- *  - {@link #restaurarEstadoSilencioso(boolean)}: aplica el estado abierto/cerrado
- *    directamente, sin pasar por la notificación del canal.
- */
 public class Muro extends EntidadEstatica implements ObservadorCanal {
 
     private final String idCanal;
@@ -39,12 +26,6 @@ public class Muro extends EntidadEstatica implements ObservadorCanal {
 
     // ── Ruta silenciosa — solo usada por Tablero.restaurarEstado ─────────────
 
-    /**
-     * Restaura el estado abierto/cerrado directamente, sin que el canal lo
-     * notifique. Debe aplicarse DESPUÉS de restaurar el estado del canal, para
-     * que ambos queden en coherencia sin re-disparar la cadena Observer.
-     * Acceso package-private: solo {@link Tablero} puede llamarlo.
-     */
     void restaurarEstadoSilencioso(boolean abierto) {
         this.abierto = abierto;
     }
@@ -53,6 +34,11 @@ public class Muro extends EntidadEstatica implements ObservadorCanal {
 
     @Override
     public boolean esTransitable() { return abierto; }
+
+    @Override
+    public boolean aceptarIngreso(Tablero tablero, int fila, int col, Direccion direccion) {
+        return abierto; // Pasa si el canal del Observer abrió la puerta
+    }
 
     @Override
     public String getClaveSprite() {
