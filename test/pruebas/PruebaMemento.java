@@ -2,8 +2,6 @@ package pruebas;
 
 import modelo.*;
 
-import java.util.Collections;
-
 /**
  * Prueba manual del patrón GoF Memento aplicado al Tablero.
  *
@@ -73,6 +71,7 @@ public class PruebaMemento {
         tablero.colocarElemento(1, 2, caja);
         tablero.setJugador(jugador);
         tablero.setPosicionJugador(1, 1);
+        jugador.setMirada(Direccion.DERECHA);  // ya mira a donde va a empujar
 
         MotorMovimiento motor = new MotorMovimiento(tablero);
         TableroMemento snapshot = tablero.guardarEstado(0);
@@ -98,6 +97,7 @@ public class PruebaMemento {
         tablero.colocarElemento(1, 1, jugador);
         tablero.setJugador(jugador);
         tablero.setPosicionJugador(1, 1);
+        jugador.setMirada(Direccion.DERECHA);  // ya mira a donde se va a mover
 
         MotorMovimiento motor = new MotorMovimiento(tablero);
 
@@ -133,7 +133,7 @@ public class PruebaMemento {
 
     private static void escenarioObserverPreservado() {
         GestorDeCanales gestor = new GestorDeCanales();
-        CasilleroCerrojo cerrojo = new CasilleroCerrojo("AZUL", false);
+        CasilleroCerrojo cerrojo = new CasilleroCerrojo("AZUL");
         Muro muro = new Muro("AZUL");
         gestor.registrarCerrojo(cerrojo);
         gestor.registrarMuro(muro);
@@ -150,8 +150,9 @@ public class PruebaMemento {
         tablero.colocarElemento(1, 1, jugador);
         tablero.setJugador(jugador);
         tablero.setPosicionJugador(1, 1);
+        jugador.setMirada(Direccion.DERECHA);  // ya mira a donde se va a mover
 
-        CajaLlave llave = new CajaLlave(Collections.singletonList("AZUL"));
+        CajaLlave llave = CajaLlave.deCanal("AZUL");
         tablero.colocarElemento(1, 3, llave);
 
         check("Observer: muro empieza cerrado", !muro.esTransitable());
@@ -206,6 +207,7 @@ public class PruebaMemento {
         tablero.colocarElemento(1, 3, destino);
         tablero.setJugador(jugador);
         tablero.setPosicionJugador(1, 1);
+        jugador.setMirada(Direccion.DERECHA);  // ya mira a donde va a empujar
 
         MotorMovimiento motor = new MotorMovimiento(tablero);
 

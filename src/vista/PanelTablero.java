@@ -2,7 +2,7 @@ package vista;
 
 import modelo.EntidadDinamica;
 import modelo.Entidad;
-import modelo.SueloEspecial;
+import modelo.EntidadEstaticaConOcupante;
 import modelo.Tablero;
 import javax.swing.JPanel;
 import javax.imageio.ImageIO;
@@ -49,9 +49,18 @@ public class PanelTablero extends JPanel {
         cargar("pared",            "muro5.png");
         cargar("destino",          "destino.png");
         cargar("cajaNormal",       "cajaNormal.png");
-        cargar("cajaFragil",       "cajaFragil.png");
         cargar("sueloResbaladizo", "sueloResbaladizo5.png");
-        cargar("sokoban",          "sokobanFrente.png");
+
+        // Caja frágil: el sprite indica la vida restante (sana → dañada → muy dañada)
+        cargar("cajaFragil",           "cajaFragil.png");
+        cargar("cajaFragilDaniada",    "cajaFragilDaniada.png");
+        cargar("cajaFragilMuyDaniada", "cajaFragilMuyDaniada.png");
+
+        // Sokoban: un sprite por dirección de mirada (clave según Sokoban.getClaveImagen())
+        cargar("sokobanFrente",    "sokobanFrente.png");
+        cargar("sokobanEspalda",   "sokobanEspalda.png");
+        cargar("sokobanIzquierda", "sokobanIzquierda.png");
+        cargar("sokobanDerecha",   "sokobanDerecha.png");
 
         // Cerrojos  (clave según CasilleroCerrojo.getClaveImagen())
         cargar("cerrojo_AZUL",    "cerrojoAzul.png");
@@ -110,9 +119,10 @@ public class PanelTablero extends JPanel {
         //    getClaveImagen() garantiza coherencia con el mapa de sprites cargado.
         dibujarImagen(g, entidad.getClaveImagen(), x, y);
 
-        // 2. Si es un suelo especial, pintamos también el objeto encima (si existe)
-        if (entidad instanceof SueloEspecial suelo && suelo.estaOcupado()) {
-            EntidadDinamica objeto = suelo.getObjetoEncima();
+        // 2. Si es un contenedor (suelo especial o muro abierto), pintamos también
+        //    el objeto que tenga encima (si existe).
+        if (entidad instanceof EntidadEstaticaConOcupante contenedor && contenedor.estaOcupado()) {
+            EntidadDinamica objeto = contenedor.getObjetoEncima();
             dibujarImagen(g, objeto.getClaveImagen(), x, y);
         }
     }

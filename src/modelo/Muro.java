@@ -9,11 +9,15 @@ package modelo;
  * Unifica lo que antes eran dos clases casi idénticas (MuroCerrado /
  * MuroAbierto), eliminando la duplicación: el estado se modela con un boolean.
  *
+ * Como puerta transitable, hereda de {@link EntidadEstaticaConOcupante}: cuando
+ * está abierta y el jugador o una caja la cruzan, el objeto se guarda encima y
+ * el muro persiste en la grilla (no se destruye al ser atravesado).
+ *
  * Memento — ruta silenciosa (package-private):
  *  - {@link #restaurarEstadoSilencioso(boolean)}: aplica el estado abierto/cerrado
  *    directamente, sin pasar por la notificación del canal.
  */
-public class Muro extends EntidadEstatica implements ObservadorCanal {
+public class Muro extends EntidadEstaticaConOcupante implements ObservadorCanal {
 
     private final String idCanal;
     private boolean abierto;
@@ -52,12 +56,7 @@ public class Muro extends EntidadEstatica implements ObservadorCanal {
     // ── Entidad ───────────────────────────────────────────────────────────────
 
     @Override
-    public boolean esTransitable() { return abierto; }
-
-    @Override
-    public String getClaveSprite() {
-        return (abierto ? "muroAbierto_" : "muroCerrado_") + idCanal;
-    }
+    public boolean esTransitable() { return abierto && !estaOcupado(); }
 
     @Override
     public String getClaveImagen() {

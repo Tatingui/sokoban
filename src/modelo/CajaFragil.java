@@ -20,8 +20,14 @@ public class CajaFragil extends Caja {
     // ── API pública ──────────────────────────────────────────────────────────
 
     public void    reducirResistencia() { this.resistencia--; }
-    public boolean estaRota()           { return resistencia <= 0; }
     public int     getResistencia()     { return resistencia; }
+
+    /** Cada empuje le quita un punto de resistencia. */
+    @Override
+    public void alSerEmpujada() { reducirResistencia(); }
+
+    @Override
+    public boolean estaRota() { return resistencia <= 0; }
 
     // ── Ruta silenciosa — solo usada por Tablero.restaurarEstado ─────────────
 
@@ -35,6 +41,15 @@ public class CajaFragil extends Caja {
 
     // ── Entidad ───────────────────────────────────────────────────────────────
 
+    /**
+     * El sprite refleja la vida restante (feedback visual para el jugador):
+     * sana (3) → dañada (2) → muy dañada (1). Con 0 la caja ya se rompió y se
+     * retira de la grilla, por lo que no llega a renderizarse.
+     */
     @Override
-    public String getClaveImagen() { return "cajaFragil"; }
+    public String getClaveImagen() {
+        if (resistencia >= 3) return "cajaFragil";
+        if (resistencia == 2) return "cajaFragilDaniada";
+        return "cajaFragilMuyDaniada";
+    }
 }

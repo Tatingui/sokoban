@@ -7,17 +7,19 @@ public abstract class Entidad {
 
     /**
      * Clave usada por {@link vista.PanelTablero} para buscar el sprite en su
-     * mapa de imágenes. Método primario de renderizado (main branch API).
+     * mapa de imágenes.
      */
     public abstract String getClaveImagen();
 
     /**
-     * Alias para {@link #getClaveImagen()} utilizado por el sistema de
-     * movimiento / Memento (feature/memento-undo API).
-     * Por defecto delega a {@link #getClaveImagen()}; las subclases que
-     * necesiten una clave diferente para este accessor pueden sobreescribirlo.
+     * Devuelve la entidad dinámica que ocupa esta celda de forma móvil, o
+     * {@code null} si no hay ninguna. Permite al {@link MotorMovimiento}
+     * consultar el ocupante sin recurrir a {@code instanceof}:
+     *  - una entidad estática común no tiene ocupante → {@code null};
+     *  - un suelo especial devuelve su {@code objetoEncima};
+     *  - una entidad dinámica se devuelve a sí misma.
      */
-    public String getClaveSprite() {
-        return getClaveImagen();
+    public EntidadDinamica getOcupante() {
+        return null;
     }
 }

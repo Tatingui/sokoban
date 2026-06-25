@@ -19,7 +19,7 @@ public class PanelHUD extends JPanel {
     private int cajasEnDestino       = 0;
     private final int totalCajas;
     private int retrocesosDisponibles;
-    private final int maxRetrocesos;
+    private final int pasosPorRetroceso;
 
     // ── Tiempo ───────────────────────────────────────────────────────────────
     private long tiempoInicioMs      = 0;
@@ -34,10 +34,10 @@ public class PanelHUD extends JPanel {
     private final JLabel lblRetroValor;
 
     // ─────────────────────────────────────────────────────────────────────────
-    public PanelHUD(int totalCajas, int maxRetrocesos) {
-        this.totalCajas            = totalCajas;
-        this.maxRetrocesos         = maxRetrocesos;
-        this.retrocesosDisponibles = maxRetrocesos;
+    public PanelHUD(int totalDestinos, int pasosPorRetroceso) {
+        this.totalCajas            = totalDestinos;
+        this.pasosPorRetroceso     = pasosPorRetroceso;
+        this.retrocesosDisponibles = 0;
 
         setBackground(COLOR_FONDO);
         setLayout(new GridLayout(1, 4, 16, 0));  // 4 columnas, separación horizontal
@@ -46,8 +46,9 @@ public class PanelHUD extends JPanel {
         // Crear los 4 indicadores
         lblTiempoValor = crearIndicador("TIEMPO",     "00:00");
         lblMovValor    = crearIndicador("MOVIMIENTOS", "0");
-        lblCajasValor  = crearIndicador("CAJAS",       "0 / " + totalCajas);
-        lblRetroValor  = crearIndicador("RETROCESOS",  String.valueOf(maxRetrocesos));
+        lblCajasValor  = crearIndicador("CAJAS",       "0 / " + totalDestinos);
+        lblRetroValor  = crearIndicador("RETROCESOS",  "0 (0)");
+        lblRetroValor.setForeground(COLOR_ALERTA);  // arranca en rojo: aún no se puede retroceder
 
         // Timer de Swing: dispara cada 1000 ms para refrescar el tiempo
         timerSwing = new Timer(1000, e -> actualizarTiempoUI());
@@ -76,7 +77,7 @@ public class PanelHUD extends JPanel {
         detenerTiempo();
         movimientos           = 0;
         cajasEnDestino        = 0;
-        retrocesosDisponibles = maxRetrocesos;
+        retrocesosDisponibles = 0;
         tiempoAcumuladoMs     = 0;
         actualizarUI();
     }
@@ -95,9 +96,18 @@ public class PanelHUD extends JPanel {
 
     public void setRetrocesosDisponibles(int n) {
         retrocesosDisponibles = n;
-        lblRetroValor.setText(String.valueOf(n));
-        // Ponerse rojo cuando quedan 2 o menos
-        lblRetroValor.setForeground(n <= 2 ? COLOR_ALERTA : COLOR_TEXTO);
+        actualizarRetroLabel();
+    }
+
+    /**
+     * Muestra "snapshots (retrocesos posibles)", ej: 15 (3), 7 (1), 4 (0).
+     * Queda en rojo mientras no se complete un bloque de {@code pasosPorRetroceso}
+     * (es decir, mientras todavía no se pueda retroceder).
+     */
+    private void actualizarRetroLabel() {
+        int posibles = retrocesosDisponibles / pasosPorRetroceso;
+        lblRetroValor.setText(retrocesosDisponibles + " (" + posibles + ")");
+        lblRetroValor.setForeground(posibles == 0 ? COLOR_ALERTA : COLOR_TEXTO);
     }
 
     // ── Métodos privados ─────────────────────────────────────────────────────
@@ -142,8 +152,7 @@ public class PanelHUD extends JPanel {
         actualizarTiempoUI();
         lblMovValor.setText(String.valueOf(movimientos));
         lblCajasValor.setText(cajasEnDestino + " / " + totalCajas);
-        lblRetroValor.setText(String.valueOf(retrocesosDisponibles));
-        lblRetroValor.setForeground(COLOR_TEXTO);
+        actualizarRetroLabel();
         lblCajasValor.setForeground(COLOR_TEXTO);
     }
 }

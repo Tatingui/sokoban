@@ -2,6 +2,7 @@ package controlador;
 
 import modelo.Direccion;
 import modelo.MotorMovimiento;
+import modelo.ResultadoMovimiento;
 import modelo.TableroMemento;
 import modelo.Tablero;
 import vista.VentanaPrincipal;
@@ -9,6 +10,7 @@ import vista.VentanaPrincipal;
 import java.awt.event.KeyEvent;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.function.IntConsumer;
 
 /**
  * ControladorJuego — Caretaker del patrón GoF Memento y coordinador MVC.
@@ -17,8 +19,10 @@ import java.util.Deque;
  *  - Mantiene el historial de snapshots (máximo {@link #LIMITE_HISTORIAL} movimientos).
  *  - Antes de cada movimiento exitoso: solicita un snapshot al Originator (Tablero)
  *    y lo apila.
- *  - Al recibir la tecla de undo: desapila el último snapshot y pide al Tablero
- *    que restaure el estado.
+ *  - Al recibir la tecla de undo: retrocede {@link #PASOS_POR_RETROCESO} pasos de
+ *    una sola vez y pide al Tablero que restaure ese estado. Si hay menos de 5
+ *    snapshots no hace nada (no hay retroceso parcial). Con tope 15 y salto de 5,
+ *    se pueden hacer como máximo 3 undos seguidos.
  *  - Mantiene {@link #contadorMovimientos} y lo sincroniza con el HUD tras cada
  *    operación (movimiento o undo).
  *
@@ -29,12 +33,18 @@ import java.util.Deque;
  */
 public class ControladorJuego {
 
-    /** Máximo de movimientos que se pueden deshacer. */
+    /** Máximo de movimientos que se pueden deshacer (snapshots guardados). */
     public static final int LIMITE_HISTORIAL = 15;
+
+    /** Pasos que retrocede cada pulsación del botón de undo. */
+    public static final int PASOS_POR_RETROCESO = 5;
 
     private final VentanaPrincipal vista;
     private final Tablero          tablero;
     private final MotorMovimiento  motorMovimiento;
+
+    /** Se invoca al resolver el nivel, con la cantidad de movimientos realizados. */
+    private final IntConsumer alGanarNivel;
 
     /** Pila de snapshots: el tope es el estado ANTES del último movimiento. */
     private final Deque<TableroMemento> historial = new ArrayDeque<>();
@@ -44,9 +54,10 @@ public class ControladorJuego {
 
     // ─────────────────────────────────────────────────────────────────────────
 
-    public ControladorJuego(VentanaPrincipal vista, Tablero tablero) {
+    public ControladorJuego(VentanaPrincipal vista, Tablero tablero, IntConsumer alGanarNivel) {
         this.vista           = vista;
         this.tablero         = tablero;
+        this.alGanarNivel    = alGanarNivel;
         this.motorMovimiento = new MotorMovimiento(tablero);
         vista.configurarControles(this::procesarTecla);
     }
@@ -73,29 +84,53 @@ public class ControladorJuego {
         Direccion direccion = mapearDireccion(codigoTecla);
         if (direccion == null) return;
 
-        // Guardar snapshot ANTES de mover (se descarta si el movimiento falla)
+        // Guardar snapshot ANTES de mover (se descarta si no hay movimiento real)
         TableroMemento snapshot = tablero.guardarEstado(contadorMovimientos);
 
-        if (motorMovimiento.intentarMover(direccion)) {
-            contadorMovimientos++;
-            apilarSnapshot(snapshot);
-            sincronizarHUD();
-            vista.actualizarVista();
+        switch (motorMovimiento.intentarMover(direccion)) {
+            case MOVIMIENTO -> {
+                contadorMovimientos++;
+                apilarSnapshot(snapshot);
+                sincronizarHUD();
+                vista.actualizarVista();
+                if (tablero.nivelResuelto()) {
+                    manejarVictoria();
+                }
+            }
+            // Girar solo cambia la mirada: repintamos el sprite, sin snapshot ni conteo.
+            case GIRO -> vista.actualizarVista();
+            // Bloqueado (pared, caja inamovible, borde): nada cambió.
+            case SIN_CAMBIO -> { }
         }
+    }
+
+    /**
+     * Reacciona a la condición de victoria detectada por el Observer
+     * ({@link modelo.GestorDeVictoria}) tras un movimiento, delegando en el
+     * coordinador de niveles (que muestra la pantalla y decide el flujo).
+     */
+    private void manejarVictoria() {
+        vista.detenerTiempo();
+        alGanarNivel.accept(contadorMovimientos);
     }
 
     // ── Caretaker: undo ───────────────────────────────────────────────────────
 
     /**
-     * Deshace el último movimiento restaurando el tablero al estado del snapshot
-     * en el tope de la pila. No hace nada si el historial está vacío.
+     * Retrocede exactamente {@link #PASOS_POR_RETROCESO} pasos de una sola vez:
+     * desapila 5 snapshots y restaura el tablero al más antiguo de ellos. No hace
+     * nada si quedan menos de 5 snapshots en el historial (no hay retroceso parcial).
      */
     private void deshacerMovimiento() {
-        if (historial.isEmpty()) return;
+        if (historial.size() < PASOS_POR_RETROCESO) return;
 
-        TableroMemento memento = historial.pop();
-        tablero.restaurarEstado(memento);
-        contadorMovimientos = memento.getContadorMovimientos();
+        TableroMemento objetivo = null;
+        for (int i = 0; i < PASOS_POR_RETROCESO; i++) {
+            objetivo = historial.pop();
+        }
+
+        tablero.restaurarEstado(objetivo);
+        contadorMovimientos = objetivo.getContadorMovimientos();
         sincronizarHUD();
         vista.actualizarVista();
     }
@@ -116,7 +151,7 @@ public class ControladorJuego {
     /** Propaga el estado del contador y el historial al HUD de la vista. */
     private void sincronizarHUD() {
         int retrocesosDisponibles = historial.size();
-        int cajasEnDestino        = tablero.contarCajasEnDestino();
+        int cajasEnDestino        = tablero.getCajasEnDestino();
         vista.actualizarHUD(contadorMovimientos, retrocesosDisponibles, cajasEnDestino);
     }
 

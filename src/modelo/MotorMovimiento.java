@@ -1,9 +1,14 @@
 package modelo;
 
 /**
- * Encapsula las reglas de desplazamiento del jugador y el empuje de cajas,
- * respetando el modelo compuesto de {@link SueloEspecial} y el Observer de
- * {@link CasilleroCerrojo}.
+ * Coordina las reglas de movimiento del jugador: mirada (giro vs. avance),
+ * empuje de cajas y rotura de cajas frágiles.
+ *
+ * No usa {@code instanceof}: delega en métodos polimórficos de las entidades
+ * ({@link Entidad#getOcupante()}, {@link EntidadDinamica#esEmpujable()},
+ * {@link Caja#alSerEmpujada()}, {@link Caja#estaRota()}) y en los métodos de
+ * grilla de {@link Tablero} ({@code colocarDinamica}, {@code quitarDinamica},
+ * {@code moverDinamica}), que encapsulan el modelo de casillero intermedio.
  */
 public class MotorMovimiento {
 
@@ -13,112 +18,65 @@ public class MotorMovimiento {
         this.tablero = tablero;
     }
 
-    public boolean intentarMover(Direccion direccion) {
-        int filaOrigen = tablero.getJugadorFila();
+    public ResultadoMovimiento intentarMover(Direccion direccion) {
+        Sokoban jugador = tablero.getJugador();
+
+        // Regla de mirada: si el jugador no mira hacia allí, el primer toque solo
+        // gira (no altera la matriz → no cuenta como movimiento ni genera snapshot).
+        if (jugador.getMirada() != direccion) {
+            jugador.setMirada(direccion);
+            return ResultadoMovimiento.GIRO;
+        }
+
+        int filaOrigen    = tablero.getJugadorFila();
         int columnaOrigen = tablero.getJugadorColumna();
-        int filaDestino = filaOrigen + direccion.getDeltaFila();
-        int columnaDestino = columnaOrigen + direccion.getDeltaColumna();
+        int filaDestino   = filaOrigen + direccion.getDeltaFila();
+        int columnaDestino= columnaOrigen + direccion.getDeltaColumna();
 
         if (!tablero.esPosicionValida(filaDestino, columnaDestino)) {
-            return false;
+            return ResultadoMovimiento.SIN_CAMBIO;
         }
 
-        EntidadDinamica dinamicaDestino = obtenerDinamica(filaDestino, columnaDestino);
-        if (dinamicaDestino instanceof Caja) {
-            return intentarEmpujarCaja(filaDestino, columnaDestino, direccion);
+        EntidadDinamica ocupante = tablero.getOcupante(filaDestino, columnaDestino);
+        if (ocupante != null && ocupante.esEmpujable()) {
+            return empujarCaja(filaDestino, columnaDestino, direccion)
+                    ? ResultadoMovimiento.MOVIMIENTO
+                    : ResultadoMovimiento.SIN_CAMBIO;
         }
 
-        if (!celdaTransitableParaJugador(filaDestino, columnaDestino)) {
-            return false;
+        if (!tablero.esTransitableEn(filaDestino, columnaDestino)) {
+            return ResultadoMovimiento.SIN_CAMBIO;
         }
 
-        moverJugador(filaOrigen, columnaOrigen, filaDestino, columnaDestino);
-        return true;
-    }
-
-    private boolean intentarEmpujarCaja(int filaCaja, int columnaCaja, Direccion direccion) {
-        int filaDestinoCaja = filaCaja + direccion.getDeltaFila();
-        int columnaDestinoCaja = columnaCaja + direccion.getDeltaColumna();
-
-        if (!tablero.esPosicionValida(filaDestinoCaja, columnaDestinoCaja)) {
-            return false;
-        }
-
-        if (!celdaLibreParaDinamica(filaDestinoCaja, columnaDestinoCaja)) {
-            return false;
-        }
-
-        EntidadDinamica caja = obtenerDinamica(filaCaja, columnaCaja);
-        if (caja == null) {
-            return false;
-        }
-
-        colocarDinamica(filaDestinoCaja, columnaDestinoCaja, caja);
-        quitarDinamica(filaCaja, columnaCaja);
-
-        int filaJugador = tablero.getJugadorFila();
-        int columnaJugador = tablero.getJugadorColumna();
-        moverJugador(filaJugador, columnaJugador, filaCaja, columnaCaja);
-        return true;
-    }
-
-    private void moverJugador(int filaOrigen, int columnaOrigen, int filaDestino, int columnaDestino) {
-        Sokoban jugador = tablero.getJugador();
-        quitarDinamica(filaOrigen, columnaOrigen);
-        colocarDinamica(filaDestino, columnaDestino, jugador);
+        tablero.moverDinamica(filaOrigen, columnaOrigen, filaDestino, columnaDestino);
         tablero.setPosicionJugador(filaDestino, columnaDestino);
+        return ResultadoMovimiento.MOVIMIENTO;
     }
 
-    private EntidadDinamica obtenerDinamica(int fila, int columna) {
-        Entidad entidad = tablero.getEntidad(fila, columna);
-        if (entidad instanceof SueloEspecial sueloEspecial && sueloEspecial.estaOcupado()) {
-            return sueloEspecial.getObjetoEncima();
-        }
-        if (entidad instanceof EntidadDinamica dinamica) {
-            return dinamica;
-        }
-        return null;
-    }
+    private boolean empujarCaja(int filaCaja, int columnaCaja, Direccion direccion) {
+        int filaDestino    = filaCaja + direccion.getDeltaFila();
+        int columnaDestino = columnaCaja + direccion.getDeltaColumna();
 
-    private boolean celdaTransitableParaJugador(int fila, int columna) {
-        Entidad entidad = tablero.getEntidad(fila, columna);
-        if (entidad == null) {
-            return true;
-        }
-        if (entidad instanceof SueloEspecial sueloEspecial) {
-            return !sueloEspecial.estaOcupado();
-        }
-        return entidad.esTransitable();
-    }
+        if (!tablero.esPosicionValida(filaDestino, columnaDestino)) return false;
+        if (!tablero.celdaLibreParaDinamica(filaDestino, columnaDestino)) return false;
 
-    private boolean celdaLibreParaDinamica(int fila, int columna) {
-        Entidad entidad = tablero.getEntidad(fila, columna);
-        if (entidad == null) {
-            return true;
-        }
-        if (entidad instanceof SueloEspecial sueloEspecial) {
-            return !sueloEspecial.estaOcupado();
-        }
-        return entidad.esTransitable() && !(entidad instanceof EntidadDinamica);
-    }
+        EntidadDinamica caja = tablero.getOcupante(filaCaja, columnaCaja);
+        if (caja == null) return false;
 
-    private void colocarDinamica(int fila, int columna, EntidadDinamica dinamica) {
-        Entidad entidad = tablero.getEntidad(fila, columna);
-        if (entidad instanceof SueloEspecial sueloEspecial) {
-            sueloEspecial.setObjetoEncima(dinamica);
-            return;
-        }
-        tablero.colocarElemento(fila, columna, dinamica);
-    }
+        // Empuje válido: la caja reacciona (la frágil pierde resistencia) y avanza.
+        caja.alSerEmpujada();
+        tablero.moverDinamica(filaCaja, columnaCaja, filaDestino, columnaDestino);
 
-    private void quitarDinamica(int fila, int columna) {
-        Entidad entidad = tablero.getEntidad(fila, columna);
-        if (entidad instanceof SueloEspecial sueloEspecial) {
-            sueloEspecial.setObjetoEncima(null);
-            return;
+        // Si quedó rota tras el empuje, desaparece de la celda de destino.
+        if (caja.estaRota()) {
+            tablero.quitarDinamica(filaDestino, columnaDestino);
         }
-        if (entidad instanceof Sokoban || entidad instanceof Caja) {
-            tablero.colocarElemento(fila, columna, new SueloNormal());
-        }
+
+        // El jugador ocupa la celda que dejó libre la caja.
+        int filaJugador    = tablero.getJugadorFila();
+        int columnaJugador = tablero.getJugadorColumna();
+        tablero.moverDinamica(filaJugador, columnaJugador, filaCaja, columnaCaja);
+        tablero.setPosicionJugador(filaCaja, columnaCaja);
+        return true;
     }
 }

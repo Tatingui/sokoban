@@ -30,9 +30,9 @@ public class VentanaPrincipal extends JFrame {
         setResizable(false);
         setLayout(new BorderLayout());
 
-        int totalCajas = tablero.contarCajas();
+        int totalDestinos = tablero.getGestorDeVictoria().getTotalDestinos();
 
-        panelHUD     = new PanelHUD(totalCajas, ControladorJuego.LIMITE_HISTORIAL);
+        panelHUD     = new PanelHUD(totalDestinos, ControladorJuego.PASOS_POR_RETROCESO);
         panelTablero = new PanelTablero(tablero);
 
         add(panelHUD,     BorderLayout.NORTH);
@@ -70,6 +70,11 @@ public class VentanaPrincipal extends JFrame {
     /** Arranca el timer del HUD (llamar al inicio de la partida). */
     public void iniciarTiempo() {
         panelHUD.iniciarTiempo();
+    }
+
+    /** Detiene el timer del HUD (al ganar o pausar). */
+    public void detenerTiempo() {
+        panelHUD.detenerTiempo();
     }
 
     /** Da el foco al panel de juego para que capture eventos de teclado. */
