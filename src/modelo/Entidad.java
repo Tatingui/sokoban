@@ -22,4 +22,21 @@ public abstract class Entidad {
     public EntidadDinamica getOcupante() {
         return null;
     }
+
+    /**
+     * Estrategia de suelo de esta celda (patrón Strategy). Por defecto es
+     * {@link SueloFijo} (sin efecto); los suelos especiales con comportamiento
+     * propio (ej: {@link SueloResbaladizo}) la sobrescriben.
+     */
+    public EstrategiaDeSuelo getEstrategiaDeSuelo() {
+        return SueloFijo.INSTANCIA;
+    }
+
+    /**
+     * ¿Esta celda detiene el proyectil de un portal? Solo las paredes lo frenan;
+     * el disparo atraviesa cajas, puertas y suelos. Por defecto, no detiene.
+     */
+    public boolean detienePortal() {
+        return false;
+    }
 }

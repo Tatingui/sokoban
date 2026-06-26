@@ -28,6 +28,16 @@ public class MotorMovimiento {
             return ResultadoMovimiento.GIRO;
         }
 
+        ResultadoMovimiento resultado = avanzar(direccion);
+
+        // Tras un movimiento válido, las cintas arrastran un paso a sus ocupantes.
+        if (resultado.esAvance()) {
+            tablero.getGestorDeCintas().avanzar(tablero);
+        }
+        return resultado;
+    }
+
+    private ResultadoMovimiento avanzar(Direccion direccion) {
         int filaOrigen    = tablero.getJugadorFila();
         int columnaOrigen = tablero.getJugadorColumna();
         int filaDestino   = filaOrigen + direccion.getDeltaFila();
@@ -40,43 +50,118 @@ public class MotorMovimiento {
         EntidadDinamica ocupante = tablero.getOcupante(filaDestino, columnaDestino);
         if (ocupante != null && ocupante.esEmpujable()) {
             return empujarCaja(filaDestino, columnaDestino, direccion)
-                    ? ResultadoMovimiento.MOVIMIENTO
+                    ? ResultadoMovimiento.EMPUJE
                     : ResultadoMovimiento.SIN_CAMBIO;
         }
 
         if (!tablero.esTransitableEn(filaDestino, columnaDestino)) {
-            return ResultadoMovimiento.SIN_CAMBIO;
+            // Bloqueado por pared: si hay un portal en esta arista, se teletransporta.
+            return teletransportar(filaOrigen, columnaOrigen, direccion);
         }
 
         tablero.moverDinamica(filaOrigen, columnaOrigen, filaDestino, columnaDestino);
-        tablero.setPosicionJugador(filaDestino, columnaDestino);
-        return ResultadoMovimiento.MOVIMIENTO;
+        Posicion fin = deslizarSiCorresponde(filaDestino, columnaDestino, direccion);
+        tablero.setPosicionJugador(fin.fila(), fin.columna());
+        return ResultadoMovimiento.CAMINATA;
+    }
+
+    /**
+     * Teletransporta al jugador por el portal en (fila, columna) hacia {@code direccion}.
+     * Emerge en la celda del portal par mirando hacia afuera de su pared; si esa
+     * celda tiene una caja, la empuja al salir (para poder seguir a la caja que se
+     * mandó por el portal). Devuelve SIN_CAMBIO si no hay par o no se puede emerger.
+     */
+    private ResultadoMovimiento teletransportar(int fila, int columna, Direccion direccion) {
+        Portal salida = tablero.getGestorDePortales().salidaDesde(fila, columna, direccion);
+        if (salida == null) return ResultadoMovimiento.SIN_CAMBIO;
+
+        int filaSalida    = salida.fila();
+        int columnaSalida = salida.columna();
+        Direccion salidaDir = salida.lado().getOpuesta();   // hacia afuera de la pared
+
+        boolean empujo = false;
+        EntidadDinamica enSalida = tablero.getOcupante(filaSalida, columnaSalida);
+        if (enSalida != null) {
+            // Para emerger, hay que empujar la caja que está en la boca del portal.
+            if (!enSalida.esEmpujable()) return ResultadoMovimiento.SIN_CAMBIO;
+            int filaCaja    = filaSalida + salidaDir.getDeltaFila();
+            int columnaCaja = columnaSalida + salidaDir.getDeltaColumna();
+            if (!tablero.esPosicionValida(filaCaja, columnaCaja)
+                    || !tablero.celdaLibreParaDinamica(filaCaja, columnaCaja)) {
+                return ResultadoMovimiento.SIN_CAMBIO;   // la caja no puede avanzar
+            }
+            enSalida.alSerEmpujada();
+            tablero.moverDinamica(filaSalida, columnaSalida, filaCaja, columnaCaja);
+            if (enSalida.estaRota()) tablero.quitarDinamica(filaCaja, columnaCaja);
+            empujo = true;
+        }
+
+        tablero.moverDinamica(fila, columna, filaSalida, columnaSalida);
+        tablero.setPosicionJugador(filaSalida, columnaSalida);
+        tablero.getJugador().setMirada(salidaDir);
+        return empujo ? ResultadoMovimiento.EMPUJE : ResultadoMovimiento.CAMINATA;
+    }
+
+    /**
+     * Si en (fila, columna) hay un portal hacia {@code direccion} con par y su
+     * celda de salida está libre, devuelve esa celda; si no, {@code null}.
+     */
+    private Posicion salidaPortal(int fila, int columna, Direccion direccion) {
+        Portal salida = tablero.getGestorDePortales().salidaDesde(fila, columna, direccion);
+        if (salida == null) return null;
+        if (!tablero.celdaLibreParaDinamica(salida.fila(), salida.columna())) return null;
+        return new Posicion(salida.fila(), salida.columna());
     }
 
     private boolean empujarCaja(int filaCaja, int columnaCaja, Direccion direccion) {
-        int filaDestino    = filaCaja + direccion.getDeltaFila();
-        int columnaDestino = columnaCaja + direccion.getDeltaColumna();
+        int filaAdyacente    = filaCaja + direccion.getDeltaFila();
+        int columnaAdyacente = columnaCaja + direccion.getDeltaColumna();
 
-        if (!tablero.esPosicionValida(filaDestino, columnaDestino)) return false;
-        if (!tablero.celdaLibreParaDinamica(filaDestino, columnaDestino)) return false;
+        // Destino de la caja: la celda contigua si está libre, o la salida de un
+        // portal si la contigua es una pared con un portal en esa arista.
+        Posicion destinoCaja;
+        boolean porPortal;
+        if (tablero.esPosicionValida(filaAdyacente, columnaAdyacente)
+                && tablero.celdaLibreParaDinamica(filaAdyacente, columnaAdyacente)) {
+            destinoCaja = new Posicion(filaAdyacente, columnaAdyacente);
+            porPortal   = false;
+        } else {
+            destinoCaja = salidaPortal(filaCaja, columnaCaja, direccion);
+            if (destinoCaja == null) return false;
+            porPortal   = true;
+        }
 
         EntidadDinamica caja = tablero.getOcupante(filaCaja, columnaCaja);
         if (caja == null) return false;
 
         // Empuje válido: la caja reacciona (la frágil pierde resistencia) y avanza.
         caja.alSerEmpujada();
-        tablero.moverDinamica(filaCaja, columnaCaja, filaDestino, columnaDestino);
+        tablero.moverDinamica(filaCaja, columnaCaja, destinoCaja.fila(), destinoCaja.columna());
 
-        // Si quedó rota tras el empuje, desaparece de la celda de destino.
         if (caja.estaRota()) {
-            tablero.quitarDinamica(filaDestino, columnaDestino);
+            // Si quedó rota tras el empuje, desaparece de la celda de destino.
+            tablero.quitarDinamica(destinoCaja.fila(), destinoCaja.columna());
+        } else if (!porPortal) {
+            // La caja también se desliza si cae en hielo (no al salir de un portal).
+            deslizarSiCorresponde(destinoCaja.fila(), destinoCaja.columna(), direccion);
         }
 
-        // El jugador ocupa la celda que dejó libre la caja.
+        // El jugador ocupa la celda que dejó libre la caja (y desliza si es hielo).
         int filaJugador    = tablero.getJugadorFila();
         int columnaJugador = tablero.getJugadorColumna();
         tablero.moverDinamica(filaJugador, columnaJugador, filaCaja, columnaCaja);
-        tablero.setPosicionJugador(filaCaja, columnaCaja);
+        Posicion fin = deslizarSiCorresponde(filaCaja, columnaCaja, direccion);
+        tablero.setPosicionJugador(fin.fila(), fin.columna());
         return true;
+    }
+
+    /**
+     * Aplica la estrategia del suelo donde quedó la entidad (patrón Strategy):
+     * el suelo normal no hace nada; el resbaladizo la desliza. Devuelve la
+     * posición final de reposo.
+     */
+    private Posicion deslizarSiCorresponde(int fila, int columna, Direccion direccion) {
+        return tablero.estrategiaSueloEn(fila, columna)
+                .alLlegar(tablero, fila, columna, direccion);
     }
 }

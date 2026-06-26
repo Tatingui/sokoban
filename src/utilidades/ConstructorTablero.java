@@ -53,6 +53,8 @@ public class ConstructorTablero implements ConstructorDeTablero {
             gestor.registrarMuro((Muro) entidad);
         } else if (entidad instanceof Destino destino) {
             tablero.getGestorDeVictoria().registrarDestino(destino);
+        } else if (entidad instanceof CintaTransportadora) {
+            tablero.getGestorDeCintas().registrar(fila, columna);
         } else if (entidad instanceof Sokoban sokoban) {
             tablero.setPosicionJugador(fila, columna);
             tablero.setJugador(sokoban);

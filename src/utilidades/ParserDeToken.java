@@ -19,6 +19,10 @@ public class ParserDeToken {
         if (token.startsWith("X-"))
             return new CasilleroCerrojo(token.substring(2));
 
+        // Cinta transportadora: T-ARRIBA / T-ABAJO / T-IZQUIERDA / T-DERECHA
+        if (token.startsWith("T-"))
+            return new CintaTransportadora(Direccion.valueOf(token.substring(2)));
+
         if (token.startsWith("L-")) {
             String canal = token.substring(2);
             return canal.equals("MULTI") ? CajaLlave.comodin() : CajaLlave.deCanal(canal);

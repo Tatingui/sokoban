@@ -25,6 +25,15 @@ public class GestorDeCanales {
         return canales.values();
     }
 
+    /** Total de cerrojos activados en todos los canales. */
+    public int contarCerrojosActivos() {
+        int activos = 0;
+        for (Canal canal : canales.values()) {
+            activos += canal.contarCerrojosActivos();
+        }
+        return activos;
+    }
+
     /** Asocia un cerrojo a su canal (cableado del patrón Observer). */
     public void registrarCerrojo(CasilleroCerrojo cerrojo) {
         Canal canal = obtenerOCrear(cerrojo.getIdCanal());

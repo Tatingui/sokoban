@@ -80,6 +80,15 @@ public class Canal {
 
     // ── Helpers privados ─────────────────────────────────────────────────────
 
+    /** Cantidad de cerrojos de este canal que están activados. */
+    public int contarCerrojosActivos() {
+        int activos = 0;
+        for (CasilleroCerrojo cerrojo : cerrojos) {
+            if (cerrojo.estaActivo()) activos++;
+        }
+        return activos;
+    }
+
     private boolean todosLosCerrojosActivos() {
         for (CasilleroCerrojo cerrojo : cerrojos) {
             if (!cerrojo.estaActivo()) return false;

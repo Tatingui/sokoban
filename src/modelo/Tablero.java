@@ -25,6 +25,8 @@ public class Tablero {
     private Sokoban jugador;
     private final GestorDeCanales  gestorDeCanales  = new GestorDeCanales();
     private final GestorDeVictoria gestorDeVictoria = new GestorDeVictoria();
+    private final GestorDeCintas   gestorDeCintas   = new GestorDeCintas();
+    private final GestorDePortales gestorDePortales = new GestorDePortales();
 
     // ── API de construcción (usada por ConstructorTablero) ───────────────────
 
@@ -55,6 +57,8 @@ public class Tablero {
     public Entidad[][] getGrilla()    { return grilla; }
     public GestorDeCanales  getGestorDeCanales()  { return gestorDeCanales; }
     public GestorDeVictoria getGestorDeVictoria() { return gestorDeVictoria; }
+    public GestorDeCintas   getGestorDeCintas()   { return gestorDeCintas; }
+    public GestorDePortales getGestorDePortales() { return gestorDePortales; }
 
     public boolean esPosicionValida(int fila, int columna) {
         return fila >= 0 && fila < getFilas()
@@ -76,6 +80,12 @@ public class Tablero {
     public EntidadDinamica getOcupante(int fila, int columna) {
         Entidad entidad = grilla[fila][columna];
         return entidad == null ? null : entidad.getOcupante();
+    }
+
+    /** Estrategia de suelo de la celda (patrón Strategy); {@link SueloFijo} si está vacía. */
+    public EstrategiaDeSuelo estrategiaSueloEn(int fila, int columna) {
+        Entidad entidad = grilla[fila][columna];
+        return entidad == null ? SueloFijo.INSTANCIA : entidad.getEstrategiaDeSuelo();
     }
 
     /** True si el jugador puede pararse en la celda (no considera empuje). */
@@ -149,6 +159,11 @@ public class Tablero {
     /** True cuando todos los destinos del nivel tienen una caja válida encima. */
     public boolean nivelResuelto() {
         return gestorDeVictoria.nivelResuelto();
+    }
+
+    /** Cerrojos actualmente activados (una llave válida encima). */
+    public int contarCerrojosActivos() {
+        return gestorDeCanales.contarCerrojosActivos();
     }
 
     // ── Memento: Originator — guardarEstado ──────────────────────────────────

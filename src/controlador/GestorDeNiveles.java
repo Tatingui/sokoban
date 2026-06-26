@@ -41,7 +41,7 @@ public class GestorDeNiveles {
         }
 
         if (ventana != null) ventana.dispose();
-        ventana = new VentanaPrincipal(tablero);
+        ventana = new VentanaPrincipal(tablero, secuencia.numeroActual(), secuencia.total());
         ventana.setTitle("Sokoban - Nivel " + secuencia.numeroActual() + "/" + secuencia.total()
                 + "   |   [Z] Deshacer");
 
@@ -51,12 +51,17 @@ public class GestorDeNiveles {
 
     // ── Pantalla de nivel completado ──────────────────────────────────────────
 
-    private void alGanarNivel(int movimientos) {
+    private void alGanarNivel(EstadisticasNivel stats) {
+        String resumen = "Movimientos: " + stats.movimientos()
+                + "\nEmpujes efectuados: " + stats.empujes()
+                + "\nUsos de deshacer: " + stats.deshacerUsados()
+                + "\nPuntaje obtenido: " + stats.puntaje();
+
         if (secuencia.haySiguiente()) {
             Object[] opciones = {"Siguiente nivel", "Reiniciar nivel"};
             int eleccion = JOptionPane.showOptionDialog(ventana,
                     "¡Nivel " + secuencia.numeroActual() + " de " + secuencia.total()
-                            + " completado!\nMovimientos: " + movimientos,
+                            + " completado!\n\n" + resumen,
                     "Nivel completado",
                     JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE,
                     null, opciones, opciones[0]);
@@ -67,8 +72,7 @@ public class GestorDeNiveles {
         } else {
             Object[] opciones = {"Jugar de nuevo", "Salir"};
             int eleccion = JOptionPane.showOptionDialog(ventana,
-                    "¡Completaste los " + secuencia.total() + " niveles!\n"
-                            + "Movimientos del último nivel: " + movimientos,
+                    "¡Completaste los " + secuencia.total() + " niveles!\n\n" + resumen,
                     "¡Juego completado!",
                     JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE,
                     null, opciones, opciones[0]);

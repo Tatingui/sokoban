@@ -58,7 +58,7 @@ public class PruebaMovimiento {
         check("Giro: la mirada quedó en DERECHA",
                 jugador.getMirada() == Direccion.DERECHA);
         check("Giro: el segundo toque ya avanza",
-                motor.intentarMover(Direccion.DERECHA) == ResultadoMovimiento.MOVIMIENTO);
+                motor.intentarMover(Direccion.DERECHA) == ResultadoMovimiento.CAMINATA);
         check("Giro: el jugador avanzó a la columna 2",
                 tablero.getJugadorColumna() == 2);
     }
@@ -104,7 +104,7 @@ public class PruebaMovimiento {
 
         MotorMovimiento motor = new MotorMovimiento(tablero);
         check("Empuje: mueve la caja hacia la derecha",
-                motor.intentarMover(Direccion.DERECHA) == ResultadoMovimiento.MOVIMIENTO);
+                motor.intentarMover(Direccion.DERECHA) == ResultadoMovimiento.EMPUJE);
         check("Empuje: el jugador queda en la celda de la caja",
                 tablero.getJugadorFila() == 1 && tablero.getJugadorColumna() == 2);
         check("Empuje: la caja avanzó una celda",
@@ -170,7 +170,7 @@ public class PruebaMovimiento {
 
         MotorMovimiento motor = new MotorMovimiento(tablero);
         check("Destino: el jugador puede moverse desde un destino",
-                motor.intentarMover(Direccion.ABAJO) == ResultadoMovimiento.MOVIMIENTO);
+                motor.intentarMover(Direccion.ABAJO) == ResultadoMovimiento.CAMINATA);
         check("Destino: el suelo especial se conserva",
                 tablero.getEntidad(1, 1) instanceof Destino);
         check("Destino: el jugador quedó en la nueva celda",
@@ -207,7 +207,7 @@ public class PruebaMovimiento {
 
         ResultadoMovimiento r = motor.intentarMover(Direccion.DERECHA);  // empuje 3 → rotura
         check("Fragil: el 3er empuje es un movimiento válido",
-                r == ResultadoMovimiento.MOVIMIENTO);
+                r == ResultadoMovimiento.EMPUJE);
         check("Fragil: la caja se rompió y desapareció",
                 tablero.getOcupante(1, 5) == null);
         check("Fragil: la celda quedó como suelo normal",

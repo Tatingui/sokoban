@@ -47,7 +47,7 @@ public class PruebaPuertaPersistente {
         // Cruzar la puerta: jugador (1,0) -> (1,1) [sobre el muro abierto]
         jugador.setMirada(Direccion.DERECHA);
         check("Cruce: entrar a la puerta es un movimiento",
-                motor.intentarMover(Direccion.DERECHA) == ResultadoMovimiento.MOVIMIENTO);
+                motor.intentarMover(Direccion.DERECHA) == ResultadoMovimiento.CAMINATA);
         check("Cruce: el muro PERSISTE bajo el jugador",
                 tablero.getEntidad(1, 1) instanceof Muro);
         check("Cruce: el jugador está encima del muro",

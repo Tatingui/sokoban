@@ -22,11 +22,14 @@ public class MainSandbox {
                 System.out.println("No se pudo cargar el sandbox: " + ruta);
                 return;
             }
-            VentanaPrincipal ventana = new VentanaPrincipal(tablero);
+            VentanaPrincipal ventana = new VentanaPrincipal(tablero, 1, 1);
             ventana.setTitle("Sokoban - SANDBOX   |   [Z] Deshacer");
             ControladorJuego controlador = new ControladorJuego(ventana, tablero,
-                    movimientos -> JOptionPane.showMessageDialog(ventana,
-                            "¡Sandbox completado en " + movimientos + " movimientos!"));
+                    stats -> JOptionPane.showMessageDialog(ventana,
+                            "¡Sandbox completado!\nMovimientos: " + stats.movimientos()
+                                    + "\nEmpujes: " + stats.empujes()
+                                    + "\nUsos de deshacer: " + stats.deshacerUsados()
+                                    + "\nPuntaje: " + stats.puntaje()));
             controlador.iniciarJuego();
         });
     }
