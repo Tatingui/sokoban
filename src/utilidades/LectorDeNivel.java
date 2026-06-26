@@ -8,16 +8,30 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Lee un archivo de nivel (.txt) y delega la construcción del {@link Tablero}
+ * en el {@link DirectorDeTablero} (patrón Builder). Su única responsabilidad es
+ * la lectura/parseo del archivo a filas de tokens; el armado del objeto complejo
+ * queda en el Director + ConstructorTablero.
+ */
 public class LectorDeNivel {
 
     public Tablero cargarNivel(String rutaArchivo) {
-        List<String[]> filas = new ArrayList<>();
+        List<String[]> filas = leerFilas(rutaArchivo);
+        if (filas == null || filas.isEmpty()) {
+            return null;
+        }
+        DirectorDeTablero director = new DirectorDeTablero(new ConstructorTablero());
+        return director.construir(filas);
+    }
 
+    /** Lee el archivo y lo convierte en filas de tokens (separados por espacios). */
+    private List<String[]> leerFilas(String rutaArchivo) {
+        List<String[]> filas = new ArrayList<>();
         try (BufferedReader br = new BufferedReader(new FileReader(rutaArchivo))) {
             String linea;
             while ((linea = br.readLine()) != null) {
                 if (!linea.isBlank()) {
-                    // Cada celda es un token separado por espacio
                     filas.add(linea.trim().split(" "));
                 }
             }
@@ -25,19 +39,6 @@ public class LectorDeNivel {
             System.out.println("Error al leer el nivel: " + e.getMessage());
             return null;
         }
-
-        if (filas.isEmpty()) return null;
-
-        int numFilas = filas.size();
-        int numColumnas = filas.get(0).length;
-
-        ConstructorTablero constructor = new ConstructorTablero();
-        constructor.definirTamanio(numFilas, numColumnas);
-
-        for (int i = 0; i < numFilas; i++) {
-            constructor.procesarFila(i, filas.get(i));
-        }
-
-        return constructor.obtenerTablero();
+        return filas;
     }
 }

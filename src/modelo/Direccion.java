@@ -21,4 +21,14 @@ public enum Direccion {
     public int getDeltaColumna() {
         return deltaColumna;
     }
+
+    /** Dirección contraria (ARRIBA↔ABAJO, IZQUIERDA↔DERECHA). */
+    public Direccion getOpuesta() {
+        return switch (this) {
+            case ARRIBA    -> ABAJO;
+            case ABAJO     -> ARRIBA;
+            case IZQUIERDA -> DERECHA;
+            case DERECHA   -> IZQUIERDA;
+        };
+    }
 }

@@ -1,14 +1,18 @@
 package controlador;
 
+import modelo.ColorPortal;
 import modelo.Direccion;
 import modelo.MotorMovimiento;
+import modelo.ResultadoMovimiento;
 import modelo.TableroMemento;
 import modelo.Tablero;
+import sonido.GestorDeSonido;
 import vista.VentanaPrincipal;
 
 import java.awt.event.KeyEvent;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.function.Consumer;
 
 /**
  * ControladorJuego — Caretaker del patrón GoF Memento y coordinador MVC.
@@ -17,8 +21,10 @@ import java.util.Deque;
  *  - Mantiene el historial de snapshots (máximo {@link #LIMITE_HISTORIAL} movimientos).
  *  - Antes de cada movimiento exitoso: solicita un snapshot al Originator (Tablero)
  *    y lo apila.
- *  - Al recibir la tecla de undo: desapila el último snapshot y pide al Tablero
- *    que restaure el estado.
+ *  - Al recibir la tecla de undo: retrocede {@link #PASOS_POR_RETROCESO} pasos de
+ *    una sola vez y pide al Tablero que restaure ese estado. Si hay menos de 5
+ *    snapshots no hace nada (no hay retroceso parcial). Con tope 15 y salto de 5,
+ *    se pueden hacer como máximo 3 undos seguidos.
  *  - Mantiene {@link #contadorMovimientos} y lo sincroniza con el HUD tras cada
  *    operación (movimiento o undo).
  *
@@ -29,12 +35,18 @@ import java.util.Deque;
  */
 public class ControladorJuego {
 
-    /** Máximo de movimientos que se pueden deshacer. */
+    /** Máximo de movimientos que se pueden deshacer (snapshots guardados). */
     public static final int LIMITE_HISTORIAL = 15;
+
+    /** Pasos que retrocede cada pulsación del botón de undo. */
+    public static final int PASOS_POR_RETROCESO = 5;
 
     private final VentanaPrincipal vista;
     private final Tablero          tablero;
     private final MotorMovimiento  motorMovimiento;
+
+    /** Se invoca al resolver el nivel, con las estadísticas de la partida. */
+    private final Consumer<EstadisticasNivel> alGanarNivel;
 
     /** Pila de snapshots: el tope es el estado ANTES del último movimiento. */
     private final Deque<TableroMemento> historial = new ArrayDeque<>();
@@ -42,13 +54,24 @@ public class ControladorJuego {
     /** Número de movimientos realizados en la partida actual. */
     private int contadorMovimientos = 0;
 
+    /** Empujes de cajas efectuados (monótono; no se revierte con el undo). */
+    private int contadorEmpujes = 0;
+
+    /** Cantidad de veces que se usó el botón de deshacer (monótono). */
+    private int contadorDeshacer = 0;
+
     // ─────────────────────────────────────────────────────────────────────────
 
-    public ControladorJuego(VentanaPrincipal vista, Tablero tablero) {
+    public ControladorJuego(VentanaPrincipal vista, Tablero tablero,
+                            Consumer<EstadisticasNivel> alGanarNivel) {
         this.vista           = vista;
         this.tablero         = tablero;
+        this.alGanarNivel    = alGanarNivel;
         this.motorMovimiento = new MotorMovimiento(tablero);
         vista.configurarControles(this::procesarTecla);
+        vista.configurarPortales(
+                () -> dispararPortal(ColorPortal.AZUL),
+                () -> dispararPortal(ColorPortal.NARANJA));
     }
 
     // ── API pública ──────────────────────────────────────────────────────────
@@ -56,6 +79,7 @@ public class ControladorJuego {
     public void iniciarJuego() {
         sincronizarHUD();
         vista.iniciarTiempo();
+        GestorDeSonido.getInstancia().reproducirMusicaFondo();
         vista.setVisible(true);
         vista.solicitarFoco();
     }
@@ -73,29 +97,87 @@ public class ControladorJuego {
         Direccion direccion = mapearDireccion(codigoTecla);
         if (direccion == null) return;
 
-        // Guardar snapshot ANTES de mover (se descarta si el movimiento falla)
+        // Estado de colocaciones correctas ANTES de mover (para el sonido).
+        int cajasAntes    = tablero.getCajasEnDestino();
+        int cerrojosAntes = tablero.contarCerrojosActivos();
+
+        // Guardar snapshot ANTES de mover (se descarta si no hay movimiento real)
         TableroMemento snapshot = tablero.guardarEstado(contadorMovimientos);
 
-        if (motorMovimiento.intentarMover(direccion)) {
+        ResultadoMovimiento resultado = motorMovimiento.intentarMover(direccion);
+        if (resultado.esAvance()) {
             contadorMovimientos++;
+            GestorDeSonido sonido = GestorDeSonido.getInstancia();
+            if (resultado == ResultadoMovimiento.EMPUJE) {
+                contadorEmpujes++;
+                sonido.moverCaja();
+            } else {
+                sonido.caminar();
+            }
+            // Caja válida que quedó en destino, o llave que activó un cerrojo.
+            if (tablero.getCajasEnDestino() > cajasAntes
+                    || tablero.contarCerrojosActivos() > cerrojosAntes) {
+                sonido.cajaEnDestino();
+            }
+
             apilarSnapshot(snapshot);
             sincronizarHUD();
             vista.actualizarVista();
+            if (tablero.nivelResuelto()) {
+                manejarVictoria();
+            }
+        } else if (resultado == ResultadoMovimiento.GIRO) {
+            // Girar solo cambia la mirada: repintamos el sprite, sin snapshot ni conteo.
+            vista.actualizarVista();
         }
+        // SIN_CAMBIO (pared, caja inamovible, borde): nada cambió.
+    }
+
+    /**
+     * Reacciona a la condición de victoria detectada por el Observer
+     * ({@link modelo.GestorDeVictoria}) tras un movimiento, delegando en el
+     * coordinador de niveles (que muestra la pantalla y decide el flujo).
+     */
+    /**
+     * Dispara (o reposiciona) un portal en la dirección que mira Sokoban. No es
+     * un movimiento: no cuenta ni genera snapshot, solo reubica el portal y repinta.
+     */
+    private void dispararPortal(ColorPortal color) {
+        boolean colocado = tablero.getGestorDePortales().disparar(tablero, color,
+                tablero.getJugadorFila(), tablero.getJugadorColumna(),
+                tablero.getJugador().getMirada());
+        if (colocado) {
+            GestorDeSonido.getInstancia().abrirPortal();
+            vista.actualizarVista();
+        }
+    }
+
+    private void manejarVictoria() {
+        vista.detenerTiempo();
+        GestorDeSonido.getInstancia().victoria();
+        EstadisticasNivel stats = new EstadisticasNivel(
+                contadorMovimientos, contadorEmpujes, contadorDeshacer, vista.getPuntaje());
+        alGanarNivel.accept(stats);
     }
 
     // ── Caretaker: undo ───────────────────────────────────────────────────────
 
     /**
-     * Deshace el último movimiento restaurando el tablero al estado del snapshot
-     * en el tope de la pila. No hace nada si el historial está vacío.
+     * Retrocede exactamente {@link #PASOS_POR_RETROCESO} pasos de una sola vez:
+     * desapila 5 snapshots y restaura el tablero al más antiguo de ellos. No hace
+     * nada si quedan menos de 5 snapshots en el historial (no hay retroceso parcial).
      */
     private void deshacerMovimiento() {
-        if (historial.isEmpty()) return;
+        if (historial.size() < PASOS_POR_RETROCESO) return;
 
-        TableroMemento memento = historial.pop();
-        tablero.restaurarEstado(memento);
-        contadorMovimientos = memento.getContadorMovimientos();
+        TableroMemento objetivo = null;
+        for (int i = 0; i < PASOS_POR_RETROCESO; i++) {
+            objetivo = historial.pop();
+        }
+
+        tablero.restaurarEstado(objetivo);
+        contadorMovimientos = objetivo.getContadorMovimientos();
+        contadorDeshacer++;   // monótono: penaliza el puntaje aunque se rehaga
         sincronizarHUD();
         vista.actualizarVista();
     }
@@ -113,11 +195,12 @@ public class ControladorJuego {
         historial.push(snapshot);  // apila al frente (más reciente)
     }
 
-    /** Propaga el estado del contador y el historial al HUD de la vista. */
+    /** Propaga el estado de los contadores y el historial al HUD de la vista. */
     private void sincronizarHUD() {
         int retrocesosDisponibles = historial.size();
-        int cajasEnDestino        = tablero.contarCajasEnDestino();
-        vista.actualizarHUD(contadorMovimientos, retrocesosDisponibles, cajasEnDestino);
+        int cajasEnDestino        = tablero.getCajasEnDestino();
+        vista.actualizarHUD(contadorMovimientos, contadorEmpujes, retrocesosDisponibles,
+                            contadorDeshacer, cajasEnDestino);
     }
 
     private Direccion mapearDireccion(int codigoTecla) {

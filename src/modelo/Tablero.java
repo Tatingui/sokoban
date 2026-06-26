@@ -23,7 +23,10 @@ public class Tablero {
     private int jugadorFila;
     private int jugadorColumna;
     private Sokoban jugador;
-    private final GestorDeCanales gestorDeCanales = new GestorDeCanales();
+    private final GestorDeCanales  gestorDeCanales  = new GestorDeCanales();
+    private final GestorDeVictoria gestorDeVictoria = new GestorDeVictoria();
+    private final GestorDeCintas   gestorDeCintas   = new GestorDeCintas();
+    private final GestorDePortales gestorDePortales = new GestorDePortales();
 
     // ── API de construcción (usada por ConstructorTablero) ───────────────────
 
@@ -52,7 +55,10 @@ public class Tablero {
     public int     getFilas()         { return grilla.length; }
     public int     getColumnas()      { return grilla[0].length; }
     public Entidad[][] getGrilla()    { return grilla; }
-    public GestorDeCanales getGestorDeCanales() { return gestorDeCanales; }
+    public GestorDeCanales  getGestorDeCanales()  { return gestorDeCanales; }
+    public GestorDeVictoria getGestorDeVictoria() { return gestorDeVictoria; }
+    public GestorDeCintas   getGestorDeCintas()   { return gestorDeCintas; }
+    public GestorDePortales getGestorDePortales() { return gestorDePortales; }
 
     public boolean esPosicionValida(int fila, int columna) {
         return fila >= 0 && fila < getFilas()
@@ -61,6 +67,66 @@ public class Tablero {
 
     public Entidad getEntidad(int fila, int columna) {
         return grilla[fila][columna];
+    }
+
+    // ── Acceso y manipulación de dinámicas (usado por MotorMovimiento) ────────
+    //
+    // Estos métodos encapsulan la asimetría estructural del modelo de "casillero
+    // intermedio": una EntidadDinamica puede estar directamente en la grilla o
+    // como objetoEncima de un SueloEspecial. Centralizar esto aquí mantiene al
+    // MotorMovimiento libre de instanceof.
+
+    /** Entidad dinámica que ocupa la celda (jugador o caja), o null. */
+    public EntidadDinamica getOcupante(int fila, int columna) {
+        Entidad entidad = grilla[fila][columna];
+        return entidad == null ? null : entidad.getOcupante();
+    }
+
+    /** Estrategia de suelo de la celda (patrón Strategy); {@link SueloFijo} si está vacía. */
+    public EstrategiaDeSuelo estrategiaSueloEn(int fila, int columna) {
+        Entidad entidad = grilla[fila][columna];
+        return entidad == null ? SueloFijo.INSTANCIA : entidad.getEstrategiaDeSuelo();
+    }
+
+    /** True si el jugador puede pararse en la celda (no considera empuje). */
+    public boolean esTransitableEn(int fila, int columna) {
+        Entidad entidad = grilla[fila][columna];
+        return entidad == null || entidad.esTransitable();
+    }
+
+    /** True si una caja puede quedar depositada en la celda (libre y transitable). */
+    public boolean celdaLibreParaDinamica(int fila, int columna) {
+        Entidad entidad = grilla[fila][columna];
+        if (entidad == null) return true;
+        return entidad.getOcupante() == null && entidad.esTransitable();
+    }
+
+    /** Deposita una dinámica: sobre el contenedor (suelo especial o muro) si lo hay, o en la grilla. */
+    public void colocarDinamica(int fila, int columna, EntidadDinamica dinamica) {
+        Entidad entidad = grilla[fila][columna];
+        if (entidad instanceof EntidadEstaticaConOcupante contenedor) {
+            contenedor.setObjetoEncima(dinamica);
+        } else {
+            grilla[fila][columna] = dinamica;
+        }
+    }
+
+    /** Retira la dinámica de la celda: deja intacto el contenedor o repone SueloNormal. */
+    public void quitarDinamica(int fila, int columna) {
+        Entidad entidad = grilla[fila][columna];
+        if (entidad instanceof EntidadEstaticaConOcupante contenedor) {
+            contenedor.setObjetoEncima(null);
+        } else if (entidad instanceof EntidadDinamica) {
+            grilla[fila][columna] = new SueloNormal();
+        }
+    }
+
+    /** Traslada la dinámica de una celda a otra respetando los suelos especiales. */
+    public void moverDinamica(int filaOrigen, int columnaOrigen,
+                              int filaDestino, int columnaDestino) {
+        EntidadDinamica dinamica = getOcupante(filaOrigen, columnaOrigen);
+        quitarDinamica(filaOrigen, columnaOrigen);
+        colocarDinamica(filaDestino, columnaDestino, dinamica);
     }
 
     // ── Utilidades de consulta del estado del nivel ──────────────────────────
@@ -82,18 +148,22 @@ public class Tablero {
         return total;
     }
 
-    /** Cuenta las cajas que ya reposan sobre una casilla Destino. */
-    public int contarCajasEnDestino() {
-        int total = 0;
-        for (int f = 0; f < getFilas(); f++) {
-            for (int c = 0; c < getColumnas(); c++) {
-                if (grilla[f][c] instanceof Destino destino
-                        && destino.getObjetoEncima() instanceof Caja) {
-                    total++;
-                }
-            }
-        }
-        return total;
+    /**
+     * Cajas válidas actualmente sobre destinos. Lo mantiene el Observer
+     * ({@link GestorDeVictoria}) en O(1); ya no se recorre la grilla.
+     */
+    public int getCajasEnDestino() {
+        return gestorDeVictoria.getCajasEnDestino();
+    }
+
+    /** True cuando todos los destinos del nivel tienen una caja válida encima. */
+    public boolean nivelResuelto() {
+        return gestorDeVictoria.nivelResuelto();
+    }
+
+    /** Cerrojos actualmente activados (una llave válida encima). */
+    public int contarCerrojosActivos() {
+        return gestorDeCanales.contarCerrojosActivos();
     }
 
     // ── Memento: Originator — guardarEstado ──────────────────────────────────
@@ -113,31 +183,29 @@ public class Tablero {
             for (int c = 0; c < getColumnas(); c++) {
                 Entidad entidad = grilla[f][c];
 
-                // Dinámicas directas en la grilla (sin SueloEspecial debajo)
+                // Dinámica directa en la grilla (modelo de reemplazo: bajo ella hay SueloNormal)
                 if (entidad instanceof EntidadDinamica dinamica) {
                     int res = dinamica instanceof CajaFragil cf ? cf.getResistencia() : -1;
                     dinamicos.add(new TableroMemento.SnapshotDinamico(f, c, false, dinamica, res));
 
-                } else if (entidad instanceof SueloEspecial suelo) {
-
-                    // Dinámica encima de un suelo especial (Destino, Cerrojo, Resbaladizo)
-                    if (suelo.estaOcupado()) {
-                        EntidadDinamica obj = suelo.getObjetoEncima();
+                } else {
+                    // Objeto encima de un contenedor (suelo especial o muro abierto)
+                    if (entidad instanceof EntidadEstaticaConOcupante contenedor && contenedor.estaOcupado()) {
+                        EntidadDinamica obj = contenedor.getObjetoEncima();
                         int res = obj instanceof CajaFragil cf ? cf.getResistencia() : -1;
                         dinamicos.add(new TableroMemento.SnapshotDinamico(f, c, true, obj, res));
                     }
 
                     // Estado interno del cerrojo
                     if (entidad instanceof CasilleroCerrojo cerrojo) {
-                        String coordLlave = cerrojo.getLlaveActiva() != null
-                                ? encontrarCoordenada(cerrojo.getLlaveActiva())
-                                : null;
                         cerrojos.put(clave(f, c),
-                                new TableroMemento.SnapshotCerrojo(cerrojo.estaActivo(), coordLlave));
+                                new TableroMemento.SnapshotCerrojo(cerrojo.estaActivo()));
                     }
 
-                } else if (entidad instanceof Muro muro) {
-                    muros.put(clave(f, c), muro.estaAbierto());
+                    // Estado del muro (abierto/cerrado); puede además tener un ocupante encima
+                    if (entidad instanceof Muro muro) {
+                        muros.put(clave(f, c), muro.estaAbierto());
+                    }
                 }
             }
         }
@@ -145,10 +213,11 @@ public class Tablero {
         // Estado de cada canal
         for (Canal canal : gestorDeCanales.getCanales()) {
             canales.put(canal.getId(),
-                    new TableroMemento.SnapshotCanal(canal.estaAbierto(), canal.isSuprimido()));
+                    new TableroMemento.SnapshotCanal(canal.estaAbierto()));
         }
 
-        return new TableroMemento(jugadorFila, jugadorColumna, contadorMovimientos,
+        Direccion mirada = jugador != null ? jugador.getMirada() : Direccion.ABAJO;
+        return new TableroMemento(jugadorFila, jugadorColumna, mirada, contadorMovimientos,
                 dinamicos, cerrojos, canales, muros);
     }
 
@@ -165,20 +234,18 @@ public class Tablero {
      *   5. Restaurar estado de cada canal (silencioso, sin evaluarEstado).
      *   6. Restaurar estado de cada muro (silencioso, sin notificar).
      *   7. Actualizar coordenadas del jugador.
+     *   8. Reconstruir el contador de victoria (silencioso, sin notificar).
      */
     public void restaurarEstado(TableroMemento memento) {
         // 1 ── Vaciar dinámicas sin activar Observer
         limpiarDinamicos();
 
-        // 2 ── Reubicar dinámicas (ruta silenciosa para CasilleroCerrojo)
+        // 2 ── Reubicar dinámicas (ruta silenciosa unificada para todo contenedor)
         for (TableroMemento.SnapshotDinamico snap : memento.dinamicos) {
-            if (snap.sobreSueloEspecial) {
-                SueloEspecial suelo = (SueloEspecial) grilla[snap.fila][snap.columna];
-                if (suelo instanceof CasilleroCerrojo cerrojo) {
-                    cerrojo.setObjetoEncimaSilencioso(snap.entidad);
-                } else {
-                    suelo.setObjetoEncima(snap.entidad);
-                }
+            if (snap.sobreContenedor) {
+                EntidadEstaticaConOcupante contenedor =
+                        (EntidadEstaticaConOcupante) grilla[snap.fila][snap.columna];
+                contenedor.setObjetoEncimaSilencioso(snap.entidad);
             } else {
                 grilla[snap.fila][snap.columna] = snap.entidad;
             }
@@ -195,17 +262,14 @@ public class Tablero {
         for (Map.Entry<String, TableroMemento.SnapshotCerrojo> entry : memento.cerrojos.entrySet()) {
             int[] coord = parseClave(entry.getKey());
             CasilleroCerrojo cerrojo = (CasilleroCerrojo) grilla[coord[0]][coord[1]];
-            TableroMemento.SnapshotCerrojo snap = entry.getValue();
-            CajaLlave llaveActiva = resolverLlave(snap.coordLlaveActiva);
-            cerrojo.restaurarEstadoSilencioso(snap.activo, llaveActiva);
+            cerrojo.restaurarEstadoSilencioso(entry.getValue().activo);
         }
 
         // 5 ── Restaurar estado de canales (silencioso — sin llamar evaluarEstado)
         for (Map.Entry<String, TableroMemento.SnapshotCanal> entry : memento.canales.entrySet()) {
             Canal canal = gestorDeCanales.obtener(entry.getKey());
             if (canal != null) {
-                canal.restaurarEstadoSilencioso(entry.getValue().abierto,
-                                                entry.getValue().suprimido);
+                canal.restaurarEstadoSilencioso(entry.getValue().abierto);
             }
         }
 
@@ -215,9 +279,13 @@ public class Tablero {
             ((Muro) grilla[coord[0]][coord[1]]).restaurarEstadoSilencioso(entry.getValue());
         }
 
-        // 7 ── Actualizar coordenadas del jugador
+        // 7 ── Actualizar coordenadas y mirada del jugador
         jugadorFila    = memento.jugadorFila;
         jugadorColumna = memento.jugadorColumna;
+        if (jugador != null) jugador.setMirada(memento.miradaJugador);
+
+        // 8 ── Reconstruir el contador de victoria (silencioso, sin notificar)
+        gestorDeVictoria.recontar();
     }
 
     // ── Helpers privados ─────────────────────────────────────────────────────
@@ -233,44 +301,12 @@ public class Tablero {
                 Entidad entidad = grilla[f][c];
                 if (entidad instanceof EntidadDinamica) {
                     grilla[f][c] = new SueloNormal();
-                } else if (entidad instanceof SueloEspecial suelo && suelo.estaOcupado()) {
-                    if (suelo instanceof CasilleroCerrojo cerrojo) {
-                        cerrojo.setObjetoEncimaSilencioso(null);
-                    } else {
-                        suelo.setObjetoEncima(null);
-                    }
+                } else if (entidad instanceof EntidadEstaticaConOcupante contenedor
+                        && contenedor.estaOcupado()) {
+                    contenedor.setObjetoEncimaSilencioso(null);
                 }
             }
         }
-    }
-
-    /**
-     * Busca una EntidadDinamica en la grilla y devuelve su clave de coordenada,
-     * tanto si está directamente en una celda como si es el objetoEncima de un suelo.
-     */
-    private String encontrarCoordenada(EntidadDinamica entidad) {
-        for (int f = 0; f < getFilas(); f++) {
-            for (int c = 0; c < getColumnas(); c++) {
-                if (grilla[f][c] == entidad) return clave(f, c);
-                if (grilla[f][c] instanceof SueloEspecial suelo
-                        && suelo.getObjetoEncima() == entidad) return clave(f, c);
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Resuelve la coordenada de una CajaLlave almacenada en el snapshot.
-     * Devuelve null si la coordenada es null o la celda no contiene una CajaLlave.
-     */
-    private CajaLlave resolverLlave(String coord) {
-        if (coord == null) return null;
-        int[] pos = parseClave(coord);
-        Entidad entidad = grilla[pos[0]][pos[1]];
-        if (entidad instanceof CajaLlave ck) return ck;
-        if (entidad instanceof SueloEspecial suelo
-                && suelo.getObjetoEncima() instanceof CajaLlave ck) return ck;
-        return null;
     }
 
     private static String clave(int fila, int columna) {

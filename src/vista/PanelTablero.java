@@ -2,9 +2,11 @@ package vista;
 
 import modelo.EntidadDinamica;
 import modelo.Entidad;
-import modelo.SueloEspecial;
+import modelo.EntidadEstaticaConOcupante;
+import modelo.Portal;
 import modelo.Tablero;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -12,6 +14,8 @@ import java.io.File;
 import java.io.IOException;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.IntConsumer;
@@ -44,14 +48,41 @@ public class PanelTablero extends JPanel {
         });
     }
 
+    /** Click izquierdo dispara un portal; click derecho, el otro. */
+    public void configurarPortales(Runnable alClickIzquierdo, Runnable alClickDerecho) {
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (SwingUtilities.isLeftMouseButton(e))       alClickIzquierdo.run();
+                else if (SwingUtilities.isRightMouseButton(e)) alClickDerecho.run();
+                requestFocusInWindow();   // no perder el foco del teclado
+            }
+        });
+    }
+
     private void cargarImagenes() {
         cargar("suelo",            "suelo.png");
         cargar("pared",            "muro5.png");
         cargar("destino",          "destino.png");
         cargar("cajaNormal",       "cajaNormal.png");
-        cargar("cajaFragil",       "cajaFragil.png");
         cargar("sueloResbaladizo", "sueloResbaladizo5.png");
-        cargar("sokoban",          "sokobanFrente.png");
+
+        // Cintas transportadoras (clave según CintaTransportadora.getClaveImagen())
+        cargar("cinta_ARRIBA",    "cintaTransportadora/arriba.png");
+        cargar("cinta_ABAJO",     "cintaTransportadora/abajo.png");
+        cargar("cinta_IZQUIERDA", "cintaTransportadora/izquierda.png");
+        cargar("cinta_DERECHA",   "cintaTransportadora/derecha.png");
+
+        // Caja frágil: el sprite indica la vida restante (sana → dañada → muy dañada)
+        cargar("cajaFragil",           "cajaFragil.png");
+        cargar("cajaFragilDaniada",    "cajaFragilDaniada.png");
+        cargar("cajaFragilMuyDaniada", "cajaFragilMuyDaniada.png");
+
+        // Sokoban: un sprite por dirección de mirada (clave según Sokoban.getClaveImagen())
+        cargar("sokobanFrente",    "sokobanFrente.png");
+        cargar("sokobanEspalda",   "sokobanEspalda.png");
+        cargar("sokobanIzquierda", "sokobanIzquierda.png");
+        cargar("sokobanDerecha",   "sokobanDerecha.png");
 
         // Cerrojos  (clave según CasilleroCerrojo.getClaveImagen())
         cargar("cerrojo_AZUL",    "cerrojoAzul.png");
@@ -73,6 +104,16 @@ public class PanelTablero extends JPanel {
         cargar("muroAbierto_AZUL",    "muroAbiertoAzul.png");
         cargar("muroAbierto_NARANJA", "muroAbiertoNaranja.png");
         cargar("muroAbierto_VERDE",   "muroAbiertoVerde.png");
+
+        // Portales: un sprite por arista (clave "portal<Color>_<LADO>")
+        cargar("portalAzul_ARRIBA",    "portal/azulArriba.png");
+        cargar("portalAzul_ABAJO",     "portal/azulAbajo.png");
+        cargar("portalAzul_IZQUIERDA", "portal/azulIzquierda.png");
+        cargar("portalAzul_DERECHA",   "portal/AzulDerecha.png");
+        cargar("portalNaranja_ARRIBA",    "portal/naranjaArriba.png");
+        cargar("portalNaranja_ABAJO",     "portal/narajaAbajo.png");
+        cargar("portalNaranja_IZQUIERDA", "portal/naranjaIzquierda.png");
+        cargar("portalNaranja_DERECHA",   "portal/naranjaDerecha.png");
     }
 
     private void cargar(String clave, String nombreArchivo) {
@@ -96,6 +137,16 @@ public class PanelTablero extends JPanel {
                 dibujarEntidad(g, grilla[fila][col], x, y);
             }
         }
+
+        // Los portales se dibujan al final, sobre la arista de su celda.
+        dibujarPortal(g, tablero.getGestorDePortales().getAzul(),    "portalAzul");
+        dibujarPortal(g, tablero.getGestorDePortales().getNaranja(), "portalNaranja");
+    }
+
+    private void dibujarPortal(Graphics g, Portal portal, String prefijo) {
+        if (portal == null) return;
+        dibujarImagen(g, prefijo + "_" + portal.lado(),
+                portal.columna() * TILE_SIZE, portal.fila() * TILE_SIZE);
     }
 
     private void dibujarEntidad(Graphics g, Entidad entidad, int x, int y) {
@@ -110,9 +161,10 @@ public class PanelTablero extends JPanel {
         //    getClaveImagen() garantiza coherencia con el mapa de sprites cargado.
         dibujarImagen(g, entidad.getClaveImagen(), x, y);
 
-        // 2. Si es un suelo especial, pintamos también el objeto encima (si existe)
-        if (entidad instanceof SueloEspecial suelo && suelo.estaOcupado()) {
-            EntidadDinamica objeto = suelo.getObjetoEncima();
+        // 2. Si es un contenedor (suelo especial o muro abierto), pintamos también
+        //    el objeto que tenga encima (si existe).
+        if (entidad instanceof EntidadEstaticaConOcupante contenedor && contenedor.estaOcupado()) {
+            EntidadDinamica objeto = contenedor.getObjetoEncima();
             dibujarImagen(g, objeto.getClaveImagen(), x, y);
         }
     }

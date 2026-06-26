@@ -1,5 +1,7 @@
 package vista;
 
+import modelo.CalculadoraDePuntaje;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -16,10 +18,15 @@ public class PanelHUD extends JPanel {
 
     // ── Estado del HUD ───────────────────────────────────────────────────────
     private int movimientos          = 0;
+    private int empujes              = 0;
     private int cajasEnDestino       = 0;
-    private final int totalCajas;
-    private int retrocesosDisponibles;
-    private final int maxRetrocesos;
+    private int retrocesosDisponibles = 0;
+    private int deshacerUsados       = 0;
+    private int puntaje              = CalculadoraDePuntaje.calcular(0, 0, 0);
+    private final int totalDestinos;
+    private final int pasosPorRetroceso;
+    private final int nivelActual;
+    private final int totalNiveles;
 
     // ── Tiempo ───────────────────────────────────────────────────────────────
     private long tiempoInicioMs      = 0;
@@ -30,27 +37,38 @@ public class PanelHUD extends JPanel {
     // ── Componentes de UI ────────────────────────────────────────────────────
     private final JLabel lblTiempoValor;
     private final JLabel lblMovValor;
+    private final JLabel lblEmpujesValor;
     private final JLabel lblCajasValor;
     private final JLabel lblRetroValor;
+    private final JLabel lblPuntajeValor;
+    private final JLabel lblNivelValor;
 
     // ─────────────────────────────────────────────────────────────────────────
-    public PanelHUD(int totalCajas, int maxRetrocesos) {
-        this.totalCajas            = totalCajas;
-        this.maxRetrocesos         = maxRetrocesos;
-        this.retrocesosDisponibles = maxRetrocesos;
+    public PanelHUD(int totalDestinos, int pasosPorRetroceso, int nivelActual, int totalNiveles) {
+        this.totalDestinos     = totalDestinos;
+        this.pasosPorRetroceso = pasosPorRetroceso;
+        this.nivelActual       = nivelActual;
+        this.totalNiveles      = totalNiveles;
 
         setBackground(COLOR_FONDO);
-        setLayout(new GridLayout(1, 4, 16, 0));  // 4 columnas, separación horizontal
+        setLayout(new GridLayout(1, 7, 16, 0));  // 7 indicadores
         setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
 
-        // Crear los 4 indicadores
-        lblTiempoValor = crearIndicador("TIEMPO",     "00:00");
-        lblMovValor    = crearIndicador("MOVIMIENTOS", "0");
-        lblCajasValor  = crearIndicador("CAJAS",       "0 / " + totalCajas);
-        lblRetroValor  = crearIndicador("RETROCESOS",  String.valueOf(maxRetrocesos));
+        lblTiempoValor  = crearIndicador("TIEMPO",      "00:00");
+        lblMovValor     = crearIndicador("MOVIMIENTOS", "0");
+        lblEmpujesValor = crearIndicador("EMPUJES",     "0");
+        lblCajasValor   = crearIndicador("CAJAS",       "0 / " + totalDestinos);
+        lblRetroValor   = crearIndicador("RETROCESOS",  "0 (0)");
+        lblPuntajeValor = crearIndicador("PUNTAJE",     String.valueOf(puntaje));
+        lblNivelValor   = crearIndicador("NIVEL",       nivelActual + " / " + totalNiveles);
 
-        // Timer de Swing: dispara cada 1000 ms para refrescar el tiempo
-        timerSwing = new Timer(1000, e -> actualizarTiempoUI());
+        lblRetroValor.setForeground(COLOR_ALERTA);  // arranca en rojo: aún no se puede retroceder
+
+        // Timer de Swing: cada segundo refresca tiempo y puntaje (que depende del tiempo).
+        timerSwing = new Timer(1000, e -> {
+            actualizarTiempoUI();
+            actualizarPuntaje();
+        });
     }
 
     // ── API pública ──────────────────────────────────────────────────────────
@@ -75,8 +93,10 @@ public class PanelHUD extends JPanel {
     public void reiniciar() {
         detenerTiempo();
         movimientos           = 0;
+        empujes               = 0;
         cajasEnDestino        = 0;
-        retrocesosDisponibles = maxRetrocesos;
+        retrocesosDisponibles = 0;
+        deshacerUsados        = 0;
         tiempoAcumuladoMs     = 0;
         actualizarUI();
     }
@@ -84,23 +104,53 @@ public class PanelHUD extends JPanel {
     public void setMovimientos(int n) {
         movimientos = n;
         lblMovValor.setText(String.valueOf(n));
+        actualizarPuntaje();
+    }
+
+    public void setEmpujes(int n) {
+        empujes = n;
+        lblEmpujesValor.setText(String.valueOf(n));
     }
 
     public void setCajasEnDestino(int n) {
         cajasEnDestino = n;
-        lblCajasValor.setText(n + " / " + totalCajas);
-        // Resaltar cuando todas las cajas están en destino
-        lblCajasValor.setForeground(n == totalCajas ? COLOR_ACENTO : COLOR_TEXTO);
+        lblCajasValor.setText(n + " / " + totalDestinos);
+        lblCajasValor.setForeground(n == totalDestinos ? COLOR_ACENTO : COLOR_TEXTO);
     }
 
     public void setRetrocesosDisponibles(int n) {
         retrocesosDisponibles = n;
-        lblRetroValor.setText(String.valueOf(n));
-        // Ponerse rojo cuando quedan 2 o menos
-        lblRetroValor.setForeground(n <= 2 ? COLOR_ALERTA : COLOR_TEXTO);
+        actualizarRetroLabel();
+    }
+
+    /** Usos del botón de deshacer; alimenta el cálculo de puntaje (no se muestra en el HUD). */
+    public void setDeshacerUsados(int n) {
+        deshacerUsados = n;
+        actualizarPuntaje();
+    }
+
+    /** Puntaje actual, usado por la pantalla de victoria. */
+    public int getPuntaje() {
+        return CalculadoraDePuntaje.calcular((int) getSegundosTranscurridos(), movimientos, deshacerUsados);
     }
 
     // ── Métodos privados ─────────────────────────────────────────────────────
+
+    /**
+     * Muestra "snapshots (retrocesos posibles)", ej: 15 (3), 7 (1), 4 (0).
+     * Queda en rojo mientras no se complete un bloque de {@code pasosPorRetroceso}
+     * (es decir, mientras todavía no se pueda retroceder).
+     */
+    private void actualizarRetroLabel() {
+        int posibles = retrocesosDisponibles / pasosPorRetroceso;
+        lblRetroValor.setText(retrocesosDisponibles + " (" + posibles + ")");
+        lblRetroValor.setForeground(posibles == 0 ? COLOR_ALERTA : COLOR_TEXTO);
+    }
+
+    private void actualizarPuntaje() {
+        puntaje = getPuntaje();
+        lblPuntajeValor.setText(String.valueOf(puntaje));
+    }
 
     /**
      * Crea un sub-panel con etiqueta descriptiva arriba y valor grande abajo.
@@ -125,15 +175,18 @@ public class PanelHUD extends JPanel {
         return lblValor;  // referencia para actualizar después
     }
 
-    /** Recalcula el tiempo transcurrido y lo muestra en formato MM:SS. */
-    private void actualizarTiempoUI() {
+    /** Segundos transcurridos de partida (acumulado + tramo actual si corre). */
+    private long getSegundosTranscurridos() {
         long totalMs = tiempoAcumuladoMs;
         if (corriendo) totalMs += System.currentTimeMillis() - tiempoInicioMs;
+        return totalMs / 1000;
+    }
 
-        long totalSeg = totalMs / 1000;
+    /** Recalcula el tiempo transcurrido y lo muestra en formato MM:SS. */
+    private void actualizarTiempoUI() {
+        long totalSeg = getSegundosTranscurridos();
         long minutos  = totalSeg / 60;
         long segundos = totalSeg % 60;
-
         lblTiempoValor.setText(String.format("%02d:%02d", minutos, segundos));
     }
 
@@ -141,9 +194,10 @@ public class PanelHUD extends JPanel {
     private void actualizarUI() {
         actualizarTiempoUI();
         lblMovValor.setText(String.valueOf(movimientos));
-        lblCajasValor.setText(cajasEnDestino + " / " + totalCajas);
-        lblRetroValor.setText(String.valueOf(retrocesosDisponibles));
-        lblRetroValor.setForeground(COLOR_TEXTO);
+        lblEmpujesValor.setText(String.valueOf(empujes));
+        lblCajasValor.setText(cajasEnDestino + " / " + totalDestinos);
+        actualizarRetroLabel();
+        actualizarPuntaje();
         lblCajasValor.setForeground(COLOR_TEXTO);
     }
 }

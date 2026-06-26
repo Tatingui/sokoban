@@ -1,29 +1,55 @@
 // CajaLlave.java
 package modelo;
 
-import java.util.List;
-
+/**
+ * Caja llave. Puede ser de dos tipos:
+ *  - de un canal concreto (ej. AZUL): solo activa cerrojos de ese canal;
+ *  - comodín (multicanal): activa CUALQUIER cerrojo, sin importar el canal. Su
+ *    sprite combina todos los colores, evitando tener que dibujar una imagen por
+ *    cada combinación posible de canales.
+ *
+ * La distinción entre llaves normales y comodín se hace por fábrica estática
+ * ({@link #deCanal(String)} / {@link #comodin()}) en lugar de un constructor
+ * público, para que el tipo de llave quede explícito en el punto de creación.
+ */
 public class CajaLlave extends Caja {
 
-    private final List<String> canales;
+    private final String  canal;    // null cuando es comodín
+    private final boolean comodin;
 
-    public CajaLlave(List<String> canales) {
-        this.canales = canales;
+    private CajaLlave(String canal, boolean comodin) {
+        this.canal   = canal;
+        this.comodin = comodin;
     }
 
-    public boolean perteneceACanal(String canal) {
-        return canales.contains(canal);
+    /** Llave de un único canal (ej. AZUL, VERDE, NARANJA). */
+    public static CajaLlave deCanal(String canal) {
+        return new CajaLlave(canal, false);
     }
 
-    public List<String> getCanales() { return canales; }
+    /** Llave comodín: abre cualquier cerrojo, sin importar el canal. */
+    public static CajaLlave comodin() {
+        return new CajaLlave(null, true);
+    }
+
+    /** Un comodín pertenece a todos los canales; una llave normal, solo al suyo. */
+    public boolean perteneceACanal(String idCanal) {
+        return comodin || idCanal.equals(canal);
+    }
+
+    public boolean esComodin() { return comodin; }
+
+    /** Una llave es una herramienta, no una caja-objetivo: no cuenta en los destinos. */
+    @Override
+    public boolean esObjetivoDeNivel() { return false; }
 
     /**
-     * Devuelve la clave de sprite registrada en PanelTablero:
-     *  - llave de un solo canal  → "llave_AZUL"  (o NARANJA, VERDE …)
-     *  - llave multicanal        → "llave_MULTICANAL"
+     * Clave de sprite:
+     *  - comodín → "llave_MULTICANAL" (sprite con todos los colores);
+     *  - normal  → "llave_AZUL" (o NARANJA, VERDE …).
      */
     @Override
     public String getClaveImagen() {
-        return canales.size() == 1 ? "llave_" + canales.get(0) : "llave_MULTICANAL";
+        return comodin ? "llave_MULTICANAL" : "llave_" + canal;
     }
 }

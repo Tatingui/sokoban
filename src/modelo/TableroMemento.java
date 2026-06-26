@@ -23,6 +23,7 @@ public final class TableroMemento {
     // ── Campos package-private: solo Tablero puede leerlos ───────────────────
     final int                            jugadorFila;
     final int                            jugadorColumna;
+    final Direccion                      miradaJugador;
     final List<SnapshotDinamico>         dinamicos;
     final Map<String, SnapshotCerrojo>   cerrojos;   // clave: "fila,columna"
     final Map<String, SnapshotCanal>     canales;    // clave: idCanal
@@ -33,6 +34,7 @@ public final class TableroMemento {
     // ── Constructor package-private ───────────────────────────────────────────
     TableroMemento(int jugadorFila,
                    int jugadorColumna,
+                   Direccion miradaJugador,
                    int contadorMovimientos,
                    List<SnapshotDinamico>       dinamicos,
                    Map<String, SnapshotCerrojo> cerrojos,
@@ -40,6 +42,7 @@ public final class TableroMemento {
                    Map<String, Boolean>         muros) {
         this.jugadorFila          = jugadorFila;
         this.jugadorColumna       = jugadorColumna;
+        this.miradaJugador        = miradaJugador;
         this.contadorMovimientos  = contadorMovimientos;
         this.dinamicos            = List.copyOf(dinamicos);
         this.cerrojos             = Map.copyOf(cerrojos);
@@ -60,51 +63,44 @@ public final class TableroMemento {
     /**
      * Captura dónde estaba una EntidadDinamica y, si es CajaFragil, cuál era
      * su resistencia en ese instante.
-     * El campo {@code sobreSueloEspecial} distingue los dos modelos de celda:
+     * El campo {@code sobreContenedor} distingue los dos modelos de celda:
      *  false → la entidad ocupaba grilla[f][c] directamente.
-     *  true  → la entidad era el objetoEncima de un SueloEspecial en grilla[f][c].
+     *  true  → la entidad era el objetoEncima de un contenedor (suelo especial o
+     *          muro abierto) en grilla[f][c].
      */
     static final class SnapshotDinamico {
         final int              fila;
         final int              columna;
-        final boolean          sobreSueloEspecial;
+        final boolean          sobreContenedor;
         final EntidadDinamica  entidad;
         /** Resistencia de CajaFragil en el momento del snapshot; -1 para otros tipos. */
         final int              resistencia;
 
-        SnapshotDinamico(int fila, int columna, boolean sobreSueloEspecial,
+        SnapshotDinamico(int fila, int columna, boolean sobreContenedor,
                          EntidadDinamica entidad, int resistencia) {
-            this.fila               = fila;
-            this.columna            = columna;
-            this.sobreSueloEspecial = sobreSueloEspecial;
-            this.entidad            = entidad;
-            this.resistencia        = resistencia;
+            this.fila            = fila;
+            this.columna         = columna;
+            this.sobreContenedor = sobreContenedor;
+            this.entidad         = entidad;
+            this.resistencia     = resistencia;
         }
     }
 
-    /**
-     * Estado interno del CasilleroCerrojo en el momento del snapshot.
-     * {@code coordLlaveActiva} es "fila,columna" de la CajaLlave que activó
-     * el cerrojo, o null si no estaba activado.
-     */
+    /** Estado interno del CasilleroCerrojo (activo/inactivo) en el momento del snapshot. */
     static final class SnapshotCerrojo {
         final boolean activo;
-        final String  coordLlaveActiva;
 
-        SnapshotCerrojo(boolean activo, String coordLlaveActiva) {
-            this.activo           = activo;
-            this.coordLlaveActiva = coordLlaveActiva;
+        SnapshotCerrojo(boolean activo) {
+            this.activo = activo;
         }
     }
 
-    /** Estado interno del Canal en el momento del snapshot. */
+    /** Estado interno del Canal (abierto/cerrado) en el momento del snapshot. */
     static final class SnapshotCanal {
         final boolean abierto;
-        final boolean suprimido;
 
-        SnapshotCanal(boolean abierto, boolean suprimido) {
-            this.abierto   = abierto;
-            this.suprimido = suprimido;
+        SnapshotCanal(boolean abierto) {
+            this.abierto = abierto;
         }
     }
 }
