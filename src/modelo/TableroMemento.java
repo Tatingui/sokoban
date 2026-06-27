@@ -13,21 +13,22 @@ import java.util.Map;
  *    el único accessor público es {@link #getContadorMovimientos()}, que el HUD
  *    necesita para actualizar la UI al deshacer.
  *
- * Inmutabilidad:
- *  - Las colecciones se copian defensivamente en el constructor con List.copyOf /
- *    Map.copyOf, de modo que ninguna modificación posterior al tablero altera el
- *    snapshot ya guardado.
+ * El estado interno de cada entidad (resistencia, activación, apertura) se guarda
+ * como un {@code Object} opaco que la propia entidad produce y consume
+ * ({@link Entidad#capturarEstadoMemento()} / {@link Entidad#aplicarEstadoMemento(Object)}),
+ * de modo que el Memento no conoce los tipos concretos.
+ *
+ * Inmutabilidad: las colecciones se copian defensivamente con List.copyOf / Map.copyOf.
  */
 public final class TableroMemento {
 
     // ── Campos package-private: solo Tablero puede leerlos ───────────────────
-    final int                            jugadorFila;
-    final int                            jugadorColumna;
-    final Direccion                      miradaJugador;
-    final List<SnapshotDinamico>         dinamicos;
-    final Map<String, SnapshotCerrojo>   cerrojos;   // clave: "fila,columna"
-    final Map<String, SnapshotCanal>     canales;    // clave: idCanal
-    final Map<String, Boolean>           muros;      // clave: "fila,columna" → abierto
+    final int                    jugadorFila;
+    final int                    jugadorColumna;
+    final Direccion              miradaJugador;
+    final List<SnapshotDinamico> dinamicos;
+    final Map<String, Object>    estadosEstaticos;  // clave "fila,columna" → estado de la celda estática
+    final Map<String, Boolean>   canales;           // clave idCanal → abierto
 
     private final int contadorMovimientos;
 
@@ -36,18 +37,16 @@ public final class TableroMemento {
                    int jugadorColumna,
                    Direccion miradaJugador,
                    int contadorMovimientos,
-                   List<SnapshotDinamico>       dinamicos,
-                   Map<String, SnapshotCerrojo> cerrojos,
-                   Map<String, SnapshotCanal>   canales,
-                   Map<String, Boolean>         muros) {
-        this.jugadorFila          = jugadorFila;
-        this.jugadorColumna       = jugadorColumna;
-        this.miradaJugador        = miradaJugador;
-        this.contadorMovimientos  = contadorMovimientos;
-        this.dinamicos            = List.copyOf(dinamicos);
-        this.cerrojos             = Map.copyOf(cerrojos);
-        this.canales              = Map.copyOf(canales);
-        this.muros                = Map.copyOf(muros);
+                   List<SnapshotDinamico> dinamicos,
+                   Map<String, Object>    estadosEstaticos,
+                   Map<String, Boolean>   canales) {
+        this.jugadorFila         = jugadorFila;
+        this.jugadorColumna      = jugadorColumna;
+        this.miradaJugador       = miradaJugador;
+        this.contadorMovimientos = contadorMovimientos;
+        this.dinamicos           = List.copyOf(dinamicos);
+        this.estadosEstaticos    = Map.copyOf(estadosEstaticos);
+        this.canales             = Map.copyOf(canales);
     }
 
     /**
@@ -58,49 +57,29 @@ public final class TableroMemento {
         return contadorMovimientos;
     }
 
-    // ── Value-objects de snapshot (package-private) ──────────────────────────
+    // ── Value-object de snapshot (package-private) ───────────────────────────
 
     /**
-     * Captura dónde estaba una EntidadDinamica y, si es CajaFragil, cuál era
-     * su resistencia en ese instante.
+     * Captura dónde estaba una EntidadDinamica y su estado interno opaco.
      * El campo {@code sobreContenedor} distingue los dos modelos de celda:
      *  false → la entidad ocupaba grilla[f][c] directamente.
-     *  true  → la entidad era el objetoEncima de un contenedor (suelo especial o
-     *          muro abierto) en grilla[f][c].
+     *  true  → la entidad era el ocupante de un contenedor (suelo especial o
+     *          muro) en grilla[f][c].
      */
     static final class SnapshotDinamico {
-        final int              fila;
-        final int              columna;
-        final boolean          sobreContenedor;
-        final EntidadDinamica  entidad;
-        /** Resistencia de CajaFragil en el momento del snapshot; -1 para otros tipos. */
-        final int              resistencia;
+        final int             fila;
+        final int             columna;
+        final boolean         sobreContenedor;
+        final EntidadDinamica entidad;
+        final Object          estado;   // estado interno capturado por la entidad (o null)
 
         SnapshotDinamico(int fila, int columna, boolean sobreContenedor,
-                         EntidadDinamica entidad, int resistencia) {
+                         EntidadDinamica entidad, Object estado) {
             this.fila            = fila;
             this.columna         = columna;
             this.sobreContenedor = sobreContenedor;
             this.entidad         = entidad;
-            this.resistencia     = resistencia;
-        }
-    }
-
-    /** Estado interno del CasilleroCerrojo (activo/inactivo) en el momento del snapshot. */
-    static final class SnapshotCerrojo {
-        final boolean activo;
-
-        SnapshotCerrojo(boolean activo) {
-            this.activo = activo;
-        }
-    }
-
-    /** Estado interno del Canal (abierto/cerrado) en el momento del snapshot. */
-    static final class SnapshotCanal {
-        final boolean abierto;
-
-        SnapshotCanal(boolean abierto) {
-            this.abierto = abierto;
+            this.estado          = estado;
         }
     }
 }

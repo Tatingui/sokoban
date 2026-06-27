@@ -13,14 +13,19 @@ import java.util.List;
  * Memento — ruta silenciosa (package-private):
  *  - {@link #restaurarSatisfechoSilencioso()}: recalcula el flag interno desde
  *    el objeto restaurado sin notificar a los observadores. La reubicación del
- *    objeto encima la hace {@link SueloEspecial#setObjetoEncimaSilencioso}.
+ *    objeto encima la hace {@link EntidadEstaticaConOcupante#colocarOcupanteSilencioso}.
  */
 public class Destino extends SueloEspecial {
 
     private final List<ObservadorDestino> observadores = new ArrayList<>();
     private boolean satisfecho = false;
 
-    // ── Configuración (llamada por GestorDeVictoria al construir el tablero) ──
+    // ── Auto-registro y configuración ────────────────────────────────────────
+
+    @Override
+    public void registrarEn(Tablero tablero, int fila, int columna) {
+        tablero.getGestorDeVictoria().registrarDestino(this);
+    }
 
     public void suscribir(ObservadorDestino observador) {
         if (!observadores.contains(observador)) observadores.add(observador);

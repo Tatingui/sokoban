@@ -37,4 +37,11 @@ public abstract class EntidadDinamica extends Entidad {
      * no las llaves ni el propio Sokoban.
      */
     public boolean esObjetivoDeNivel() { return false; }
+
+    /**
+     * ¿Esta dinámica activa un cerrojo del canal dado? Solo las llaves del canal
+     * (o comodín) lo hacen; por defecto no. Evita el {@code instanceof CajaLlave}
+     * en {@link CasilleroCerrojo}.
+     */
+    public boolean activaCerrojo(String idCanal) { return false; }
 }

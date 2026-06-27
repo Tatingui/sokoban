@@ -28,13 +28,21 @@ public abstract class EntidadEstaticaConOcupante extends EntidadEstatica {
         return objetoEncima;
     }
 
-    /**
-     * Ruta silenciosa común para el Memento: asigna el objeto encima escribiendo
-     * el campo directamente, sin pasar por las sobreescrituras de gameplay de las
-     * subclases (activación de cerrojos, notificación de destinos, etc.).
-     * Acceso package-private: solo {@link Tablero} la usa durante la restauración.
-     */
-    void setObjetoEncimaSilencioso(EntidadDinamica objeto) {
-        this.objetoEncima = objeto;
+    /** Estas celdas sí alojan una dinámica encima (modelo de casillero intermedio). */
+    @Override
+    public boolean puedeAlojar() {
+        return true;
+    }
+
+    /** Ruta de gameplay: delega en {@link #setObjetoEncima} (que las subclases sobreescriben). */
+    @Override
+    public void colocarOcupante(EntidadDinamica dinamica) {
+        setObjetoEncima(dinamica);
+    }
+
+    /** Ruta de Memento: asigna sin disparar la lógica de las subclases. */
+    @Override
+    public void colocarOcupanteSilencioso(EntidadDinamica dinamica) {
+        this.objetoEncima = dinamica;
     }
 }

@@ -4,10 +4,9 @@ package modelo;
  * Caja con resistencia limitada. Cada empuje reduce su resistencia en 1;
  * cuando llega a 0 la caja se considera rota.
  *
- * Memento: {@link #setResistencia(int)} permite al Originator ({@link Tablero})
- * restaurar el valor de resistencia capturado en el snapshot sin necesidad de
- * reconstruir la instancia desde cero.
- * Acceso package-private: solo clases del paquete modelo pueden invocarlo.
+ * Memento: implementa {@link #capturarEstadoMemento()} / {@link #aplicarEstadoMemento(Object)}
+ * para que el Originator ({@link Tablero}) guarde y restaure su resistencia sin
+ * conocer su tipo concreto (polimorfismo, sin {@code instanceof}).
  */
 public class CajaFragil extends Caja {
 
@@ -29,15 +28,13 @@ public class CajaFragil extends Caja {
     @Override
     public boolean estaRota() { return resistencia <= 0; }
 
-    // ── Ruta silenciosa — solo usada por Tablero.restaurarEstado ─────────────
+    // ── Memento (estado interno) ──────────────────────────────────────────────
 
-    /**
-     * Restaura la resistencia al valor capturado en el TableroMemento.
-     * Acceso package-private: solo {@link Tablero} puede llamarlo.
-     */
-    void setResistencia(int resistencia) {
-        this.resistencia = resistencia;
-    }
+    @Override
+    public Object capturarEstadoMemento() { return resistencia; }
+
+    @Override
+    public void aplicarEstadoMemento(Object estado) { this.resistencia = (Integer) estado; }
 
     // ── Entidad ───────────────────────────────────────────────────────────────
 

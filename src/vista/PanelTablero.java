@@ -2,7 +2,6 @@ package vista;
 
 import modelo.EntidadDinamica;
 import modelo.Entidad;
-import modelo.EntidadEstaticaConOcupante;
 import modelo.Portal;
 import modelo.Tablero;
 import javax.swing.JPanel;
@@ -161,11 +160,12 @@ public class PanelTablero extends JPanel {
         //    getClaveImagen() garantiza coherencia con el mapa de sprites cargado.
         dibujarImagen(g, entidad.getClaveImagen(), x, y);
 
-        // 2. Si es un contenedor (suelo especial o muro abierto), pintamos también
-        //    el objeto que tenga encima (si existe).
-        if (entidad instanceof EntidadEstaticaConOcupante contenedor && contenedor.estaOcupado()) {
-            EntidadDinamica objeto = contenedor.getObjetoEncima();
-            dibujarImagen(g, objeto.getClaveImagen(), x, y);
+        // 2. Si la celda aloja un objeto distinto de sí misma (suelo especial o
+        //    muro con algo encima), lo pintamos arriba. getOcupante() devuelve la
+        //    propia entidad si ya es dinámica (no hace falta repintarla).
+        EntidadDinamica ocupante = entidad.getOcupante();
+        if (ocupante != null && ocupante != entidad) {
+            dibujarImagen(g, ocupante.getClaveImagen(), x, y);
         }
     }
 

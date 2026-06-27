@@ -17,6 +17,13 @@ public class Sokoban extends EntidadDinamica {
     @Override
     public boolean esEmpujable() { return false; }
 
+    /** Al construir el nivel, el jugador fija su posición inicial en el tablero. */
+    @Override
+    public void registrarEn(Tablero tablero, int fila, int columna) {
+        tablero.setPosicionJugador(fila, columna);
+        tablero.setJugador(this);
+    }
+
     @Override
     public String getClaveImagen() {
         return switch (mirada) {

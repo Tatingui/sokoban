@@ -35,29 +35,10 @@ public class ConstructorTablero implements ConstructorDeTablero {
             String token = tokens[columna].trim();
             Entidad entidad = fabrica.crearEntidad(token);
             tablero.colocarElemento(fila, columna, entidad);
-            registrarSegunTipo(entidad, fila, columna);
-        }
-    }
-
-    /**
-     * Conecta la entidad recien creada con los subsistemas del tablero:
-     * registra cerrojos y muros en el gestor de canales y destinos en el gestor
-     * de victoria (cableado del patron Observer) y fija la posicion inicial del
-     * jugador.
-     */
-    private void registrarSegunTipo(Entidad entidad, int fila, int columna) {
-        GestorDeCanales gestor = tablero.getGestorDeCanales();
-        if (entidad instanceof CasilleroCerrojo) {
-            gestor.registrarCerrojo((CasilleroCerrojo) entidad);
-        } else if (entidad instanceof Muro) {
-            gestor.registrarMuro((Muro) entidad);
-        } else if (entidad instanceof Destino destino) {
-            tablero.getGestorDeVictoria().registrarDestino(destino);
-        } else if (entidad instanceof CintaTransportadora) {
-            tablero.getGestorDeCintas().registrar(fila, columna);
-        } else if (entidad instanceof Sokoban sokoban) {
-            tablero.setPosicionJugador(fila, columna);
-            tablero.setJugador(sokoban);
+            // Cada entidad sabe cómo cablearse en los subsistemas del tablero
+            // (cerrojos/muros → canales, destinos → victoria, cintas, jugador).
+            // Polimorfismo en lugar de un dispatch por tipo con instanceof.
+            entidad.registrarEn(tablero, fila, columna);
         }
     }
 

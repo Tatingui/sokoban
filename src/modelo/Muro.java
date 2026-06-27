@@ -13,9 +13,8 @@ package modelo;
  * está abierta y el jugador o una caja la cruzan, el objeto se guarda encima y
  * el muro persiste en la grilla (no se destruye al ser atravesado).
  *
- * Memento — ruta silenciosa (package-private):
- *  - {@link #restaurarEstadoSilencioso(boolean)}: aplica el estado abierto/cerrado
- *    directamente, sin pasar por la notificación del canal.
+ * Memento: implementa {@link #capturarEstadoMemento()} / {@link #aplicarEstadoMemento(Object)}
+ * para guardar/restaurar su estado abierto/cerrado sin notificar al canal.
  */
 public class Muro extends EntidadEstaticaConOcupante implements ObservadorCanal {
 
@@ -36,22 +35,25 @@ public class Muro extends EntidadEstaticaConOcupante implements ObservadorCanal 
     public String  getIdCanal()  { return idCanal; }
     public boolean estaAbierto() { return abierto; }
 
+    // ── Auto-registro ─────────────────────────────────────────────────────────
+
+    @Override
+    public void registrarEn(Tablero tablero, int fila, int columna) {
+        tablero.getGestorDeCanales().registrarMuro(this);
+    }
+
     // ── ObservadorCanal (ruta normal del juego) ──────────────────────────────
 
     @Override public void alAbrirCanal()  { abierto = true;  }
     @Override public void alCerrarCanal() { abierto = false; }
 
-    // ── Ruta silenciosa — solo usada por Tablero.restaurarEstado ─────────────
+    // ── Memento (estado interno, silencioso) ──────────────────────────────────
 
-    /**
-     * Restaura el estado abierto/cerrado directamente, sin que el canal lo
-     * notifique. Debe aplicarse DESPUÉS de restaurar el estado del canal, para
-     * que ambos queden en coherencia sin re-disparar la cadena Observer.
-     * Acceso package-private: solo {@link Tablero} puede llamarlo.
-     */
-    void restaurarEstadoSilencioso(boolean abierto) {
-        this.abierto = abierto;
-    }
+    @Override
+    public Object capturarEstadoMemento() { return abierto; }
+
+    @Override
+    public void aplicarEstadoMemento(Object estado) { this.abierto = (Boolean) estado; }
 
     // ── Entidad ───────────────────────────────────────────────────────────────
 

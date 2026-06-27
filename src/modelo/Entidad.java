@@ -39,4 +39,47 @@ public abstract class Entidad {
     public boolean detienePortal() {
         return false;
     }
+
+    /**
+     * Auto-registro en los subsistemas del tablero al construir el nivel
+     * (cableado del patrón Observer, posición del jugador, etc.). Cada entidad
+     * sabe dónde inscribirse; por defecto no se inscribe en ningún lado. Evita
+     * que el {@link utilidades.ConstructorTablero} dispatch por tipo con instanceof.
+     */
+    public void registrarEn(Tablero tablero, int fila, int columna) {
+        // por defecto, la entidad no necesita registrarse
+    }
+
+    /**
+     * ¿Esta celda puede alojar una dinámica encima sin perder su identidad
+     * (modelo de "casillero intermedio")? Lo hacen los suelos especiales y el
+     * muro; por defecto no.
+     */
+    public boolean puedeAlojar() {
+        return false;
+    }
+
+    /** Coloca una dinámica encima (ruta de gameplay). Solo aplica si {@link #puedeAlojar()}. */
+    public void colocarOcupante(EntidadDinamica dinamica) {
+        // por defecto la celda no aloja: no hace nada
+    }
+
+    /** Coloca una dinámica encima sin disparar lógica (ruta de Memento). */
+    public void colocarOcupanteSilencioso(EntidadDinamica dinamica) {
+        // por defecto la celda no aloja: no hace nada
+    }
+
+    /**
+     * Captura el estado interno mutable de la entidad para el Memento (ej:
+     * resistencia de una caja frágil, activación de un cerrojo, apertura de un
+     * muro). Devuelve {@code null} si la entidad no tiene estado que guardar.
+     */
+    public Object capturarEstadoMemento() {
+        return null;
+    }
+
+    /** Restaura el estado interno capturado por {@link #capturarEstadoMemento()} (silencioso). */
+    public void aplicarEstadoMemento(Object estado) {
+        // por defecto no hay estado que restaurar
+    }
 }

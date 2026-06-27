@@ -5,13 +5,11 @@ package modelo;
  * encima) y participa del patrón Observer como parte del Subject: reporta a su
  * {@link Canal} cada cambio en su estado de activación.
  *
- * Se activa cuando la {@link CajaLlave} colocada encima pertenece a su canal
- * (una llave comodín pertenece a todos los canales).
+ * Se activa cuando la dinámica colocada encima es una llave de su canal
+ * ({@link EntidadDinamica#activaCerrojo(String)}; el comodín pertenece a todos).
  *
- * Memento — ruta silenciosa (package-private):
- *  - {@link #restaurarEstadoSilencioso(boolean)}: restaura el flag {@code activo}
- *    sin notificar al canal. La reubicación del objeto encima usa la ruta
- *    silenciosa heredada de {@link EntidadEstaticaConOcupante}.
+ * Memento: implementa {@link #capturarEstadoMemento()} / {@link #aplicarEstadoMemento(Object)}
+ * para guardar/restaurar el flag {@code activo} sin notificar al canal.
  */
 public class CasilleroCerrojo extends SueloEspecial {
 
@@ -28,7 +26,12 @@ public class CasilleroCerrojo extends SueloEspecial {
     public String  getIdCanal() { return idCanal; }
     public boolean estaActivo() { return activo; }
 
-    // ── Configuración (llamada por GestorDeCanales al construir el tablero) ──
+    // ── Auto-registro y configuración ────────────────────────────────────────
+
+    @Override
+    public void registrarEn(Tablero tablero, int fila, int columna) {
+        tablero.getGestorDeCanales().registrarCerrojo(this);
+    }
 
     public void asociarCanal(Canal canal) {
         this.canal = canal;
@@ -43,15 +46,11 @@ public class CasilleroCerrojo extends SueloEspecial {
     @Override
     public void setObjetoEncima(EntidadDinamica objeto) {
         super.setObjetoEncima(objeto);
-        if (esLlaveDelCanal(objeto)) {
+        if (objeto != null && objeto.activaCerrojo(idCanal)) {
             activar();
         } else {
             desactivar();
         }
-    }
-
-    private boolean esLlaveDelCanal(EntidadDinamica objeto) {
-        return objeto instanceof CajaLlave llave && llave.perteneceACanal(idCanal);
     }
 
     private void activar() {
@@ -70,15 +69,13 @@ public class CasilleroCerrojo extends SueloEspecial {
         if (canal != null) canal.evaluarEstado();
     }
 
-    // ── Ruta silenciosa — solo usada por Tablero.restaurarEstado ─────────────
+    // ── Memento (estado interno, silencioso) ──────────────────────────────────
 
-    /**
-     * Restaura el flag {@code activo} sin notificar al canal.
-     * Acceso package-private: solo {@link Tablero} puede llamarlo.
-     */
-    void restaurarEstadoSilencioso(boolean activo) {
-        this.activo = activo;
-    }
+    @Override
+    public Object capturarEstadoMemento() { return activo; }
+
+    @Override
+    public void aplicarEstadoMemento(Object estado) { this.activo = (Boolean) estado; }
 
     // ── Entidad ───────────────────────────────────────────────────────────────
 

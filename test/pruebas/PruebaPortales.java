@@ -22,7 +22,7 @@ public class PruebaPortales {
         escenarioDisparoAtraviesaCaja();
         escenarioJugadorSeTeletransporta();
         escenarioCajaSeTeletransporta();
-        escenarioSeguirCajaPorElPortal();
+        escenarioSalidaOcupadaBloquea();
         escenarioSinParNoTeletransporta();
         escenarioUndoRevierteTeletransporte();
 
@@ -94,9 +94,9 @@ public class PruebaPortales {
                 tablero.getJugadorColumna() == 5 && tablero.getOcupante(1, 5) == jugador);
     }
 
-    // ── 3b. Seguir a la caja a través del portal ──────────────────────────────
+    // ── 3b. Salida ocupada por una caja: el teletransporte queda bloqueado ─────
 
-    private static void escenarioSeguirCajaPorElPortal() {
+    private static void escenarioSalidaOcupadaBloquea() {
         Tablero tablero = base(5, 7);
         GestorDePortales portales = tablero.getGestorDePortales();
         portales.disparar(tablero, ColorPortal.AZUL,    1, 1, Direccion.DERECHA);    // → (1,5) DERECHA
@@ -107,15 +107,17 @@ public class PruebaPortales {
 
         MotorMovimiento motor = new MotorMovimiento(tablero);
         motor.intentarMover(Direccion.DERECHA);   // empuja la caja por el portal: caja→(3,1), jugador→(1,5)
-        check("Seguir: tras empujar, el jugador quedó en la boca del portal (1,5)",
-                tablero.getJugadorColumna() == 5);
+        check("SalidaOcupada: tras empujar, el jugador quedó en la boca del portal (1,5)",
+                tablero.getJugadorColumna() == 5 && tablero.getOcupante(3, 1) instanceof CajaNormal);
 
-        motor.intentarMover(Direccion.DERECHA);   // camina por el portal empujando la caja
-        check("Seguir: el jugador emergió por el portal a (3,1)",
-                tablero.getJugadorFila() == 3 && tablero.getJugadorColumna() == 1
-                        && tablero.getOcupante(3, 1) == jugador);
-        check("Seguir: la caja fue empujada un paso afuera del portal (3,2)",
-                tablero.getOcupante(3, 2) instanceof CajaNormal);
+        // Intentar seguir: la salida (3,1) está ocupada por la caja → no teletransporta.
+        ResultadoMovimiento r = motor.intentarMover(Direccion.DERECHA);
+        check("SalidaOcupada: el segundo intento no teletransporta",
+                r == ResultadoMovimiento.SIN_CAMBIO);
+        check("SalidaOcupada: el jugador sigue en (1,5)",
+                tablero.getJugadorColumna() == 5 && tablero.getOcupante(1, 5) == jugador);
+        check("SalidaOcupada: la caja sigue en (3,1)",
+                tablero.getOcupante(3, 1) instanceof CajaNormal);
     }
 
     // ── 4. Sin par no hay teletransporte ──────────────────────────────────────

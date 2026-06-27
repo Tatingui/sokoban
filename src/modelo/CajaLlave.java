@@ -37,6 +37,12 @@ public class CajaLlave extends Caja {
         return comodin || idCanal.equals(canal);
     }
 
+    /** Una llave activa el cerrojo de un canal si pertenece a ese canal. */
+    @Override
+    public boolean activaCerrojo(String idCanal) {
+        return perteneceACanal(idCanal);
+    }
+
     public boolean esComodin() { return comodin; }
 
     /** Una llave es una herramienta, no una caja-objetivo: no cuenta en los destinos. */

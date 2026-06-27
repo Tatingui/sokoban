@@ -21,6 +21,11 @@ public class CintaTransportadora extends SueloEspecial {
     public Direccion getDireccion() { return direccion; }
 
     @Override
+    public void registrarEn(Tablero tablero, int fila, int columna) {
+        tablero.getGestorDeCintas().registrar(fila, columna);
+    }
+
+    @Override
     public EstrategiaDeSuelo getEstrategiaDeSuelo() {
         return estrategia;
     }
