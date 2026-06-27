@@ -34,20 +34,23 @@ Cada celda se escribe como un token separado por espacios. Los tokens simples so
 * `J` : Jugador (Representa la posición inicial de Sokoban)
 * `C` : Caja normal (Bloque estándar que debe ser empujado hacia los destinos)
 * `D` : Casilla destino (Ubicación donde deben colocarse las cajas para ganar)
-* `F` : Caja frágil (Caja con límite de desplazamientos)
-* `R` : Terreno resbaladizo (Superficie que desliza los objetos hasta un tope)
+* `F` : Caja frágil (Caja con límite de 3 empujes, el tercero la rompe y desaparece)
+* `R` : Terreno resbaladizo (Superficie de hielo que desliza los objetos hasta un tope)
+* `T-[DIRECCION]` : Cinta transportadora. Arrastra una celda en la dirección indicada tras cada turno. Direcciones válidas: `ARRIBA`, `ABAJO`, `IZQUIERDA`, `DERECHA` (ej: `T-ABAJO`).
 
 **Tokens por canal (sistema llave-cerrojo-muro):**
 
-* `L-[CANAL]` : Caja llave de un canal (ej: `L-AZUL`). Multicanal con `+` (ej: `L-AZUL+ROJA`)
-* `X-[CANAL]` : Casillero cerrojo. Exclusivo con el sufijo `-EXC` (ej: `X-AZUL-EXC`)
-* `M-[CANAL]` : Muro cerrado (también se acepta el formato legado `MC-[CANAL]`)
-* `A-[CANAL]` : Muro abierto
+* `L-[CANAL]` : Caja llave de un canal (ej: `L-AZUL`). Para crear una llave comodín universal se utiliza `L-MULTI`.
+* `X-[CANAL]` : Casillero cerrojo (ej: `X-AZUL`).
+* `M-[CANAL]` : Muro cerrado (ej: `M-AZUL`). También se acepta el formato legado `MC-[CANAL]`.
+* `A-[CANAL]` : Muro abierto (ej: `A-AZUL`).
 
 > Nota: `Muro` es una única entidad con estado. El mismo objeto pasa de cerrado a abierto cuando su canal se activa (patrón Observer); no son dos clases distintas.
 
 ### Requisito importante para mapas personalizados:
-Todos los archivos de nivel deben guardarse dentro del directorio `/niveles`. Además, para evitar errores de desbordamiento en la matriz, el mapa debe ser perfectamente rectangular (todas las filas deben poseer exactamente la misma cantidad de tokens). Podés tomar como referencia el nivel de demostración `niveles/nivel_cerrojos.txt`.
+Todos los archivos de nivel deben guardarse dentro del directorio `/niveles`. Además, para evitar errores de desbordamiento en la matriz, el mapa debe ser **perfectamente rectangular** (todas las filas deben poseer exactamente la misma cantidad de tokens, separados por un solo espacio). 
+
+Para que el juego cargue tu propio mapa, podés simplemente reemplazar el contenido de alguno de los archivos existentes (como `niveles/nivel3.txt`), o bien crear un archivo nuevo y agregarlo a la lista `List.of(...)` en el archivo `src/Main.java`.
 
 ## Instrucciones de Ejecución
 
@@ -66,11 +69,10 @@ Requisito común: tener instalado un **JDK 17 o superior** (el proyecto se valid
 3. Abrir `src/Main.java` y usar **Run** (▶) sobre `main`, o presionar `F5`.
 
 ### Por línea de comandos
-Compilar dentro del repo y ejecutar **desde la carpeta padre** (por la nota anterior sobre el directorio de trabajo):
+Compilar dentro del repo y ejecutar (asegurándose que el directorio de trabajo base sea la raíz del proyecto para que lea la carpeta public):
 ```bash
 # parado en la carpeta del repo (sokoban/)
-javac -d build $(find src -name "*.java")
-# subir un nivel y ejecutar
-cd ..
-java -cp sokoban/build Main
+javac -d bin $(find src -name "*.java")
+# ejecutar utilizando bin como classpath
+java -cp bin Main
 ```
