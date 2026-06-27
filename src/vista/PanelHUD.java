@@ -108,7 +108,7 @@ public class PanelHUD extends JPanel {
         btnDeshacer = new JButton("↶ Deshacer (Z)");
         estilizarBoton(btnDeshacer, new Color(80, 80, 100));
         
-        btnReiniciar = new JButton("⟲ Reiniciar Nivel");
+        btnReiniciar = new JButton("⟲ Reiniciar (R)");
         estilizarBoton(btnReiniciar, new Color(200, 60, 60));
         
         pnlBotones.add(btnDeshacer);
