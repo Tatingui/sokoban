@@ -2,9 +2,9 @@
 import controlador.ControladorJuego;
 import modelo.Tablero;
 import utilidades.LectorDeNivel;
+import vista.DialogoVictoria;
 import vista.VentanaPrincipal;
 
-import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
 /**
@@ -25,11 +25,10 @@ public class MainSandbox {
             VentanaPrincipal ventana = new VentanaPrincipal(tablero, 1, 1);
             ventana.setTitle("Sokoban - SANDBOX");
             ControladorJuego controlador = new ControladorJuego(ventana, tablero,
-                    stats -> JOptionPane.showMessageDialog(ventana,
-                            "¡Sandbox completado!\nMovimientos: " + stats.movimientos()
-                                    + "\nEmpujes: " + stats.empujes()
-                                    + "\nUsos de deshacer: " + stats.deshacerUsados()
-                                    + "\nPuntaje: " + stats.puntaje()),
+                    stats -> {
+                        DialogoVictoria dialog = new DialogoVictoria(ventana, "¡Sandbox completado!", stats, false, null, null);
+                        dialog.setVisible(true);
+                    },
                     () -> {});
             controlador.iniciarJuego();
         });

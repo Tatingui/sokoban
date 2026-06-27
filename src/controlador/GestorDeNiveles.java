@@ -3,6 +3,7 @@ package controlador;
 import modelo.Tablero;
 import utilidades.LectorDeNivel;
 import vista.VentanaPrincipal;
+import vista.DialogoVictoria;
 
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
@@ -51,37 +52,20 @@ public class GestorDeNiveles {
     // ── Pantalla de nivel completado ──────────────────────────────────────────
 
     private void alGanarNivel(EstadisticasNivel stats) {
-        String resumen = "Movimientos: " + stats.movimientos()
-                + "\nEmpujes efectuados: " + stats.empujes()
-                + "\nUsos de deshacer: " + stats.deshacerUsados()
-                + "\nPuntaje obtenido: " + stats.puntaje();
-
         if (secuencia.haySiguiente()) {
-            Object[] opciones = {"Siguiente nivel", "Reiniciar nivel"};
-            int eleccion = JOptionPane.showOptionDialog(ventana,
-                    "¡Nivel " + secuencia.numeroActual() + " de " + secuencia.total()
-                            + " completado!\n\n" + resumen,
-                    "Nivel completado",
-                    JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE,
-                    null, opciones, opciones[0]);
-
-            if (eleccion == 0) secuencia.avanzar();   // si no, reinicia el nivel actual
-            SwingUtilities.invokeLater(this::cargarNivelActual);
-
+            String titulo = "¡Nivel " + secuencia.numeroActual() + " completado!";
+            DialogoVictoria dialog = new DialogoVictoria(ventana, titulo, stats, true, 
+                () -> { secuencia.avanzar(); SwingUtilities.invokeLater(this::cargarNivelActual); },
+                () -> { SwingUtilities.invokeLater(this::cargarNivelActual); }
+            );
+            dialog.setVisible(true);
         } else {
-            Object[] opciones = {"Jugar de nuevo", "Salir"};
-            int eleccion = JOptionPane.showOptionDialog(ventana,
-                    "¡Completaste los " + secuencia.total() + " niveles!\n\n" + resumen,
-                    "¡Juego completado!",
-                    JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE,
-                    null, opciones, opciones[0]);
-
-            if (eleccion == 0) {
-                secuencia.reiniciar();
-                SwingUtilities.invokeLater(this::cargarNivelActual);
-            } else {
-                System.exit(0);
-            }
+            String titulo = "¡Juego Completado!";
+            DialogoVictoria dialog = new DialogoVictoria(ventana, titulo, stats, false, 
+                null,
+                () -> { secuencia.reiniciar(); SwingUtilities.invokeLater(this::cargarNivelActual); }
+            );
+            dialog.setVisible(true);
         }
     }
 }
