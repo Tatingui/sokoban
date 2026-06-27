@@ -23,7 +23,7 @@ public class MainSandbox {
                 return;
             }
             VentanaPrincipal ventana = new VentanaPrincipal(tablero, 1, 1);
-            ventana.setTitle("Sokoban - SANDBOX   |   [Z] Deshacer");
+            ventana.setTitle("Sokoban - SANDBOX");
             ControladorJuego controlador = new ControladorJuego(ventana, tablero,
                     stats -> JOptionPane.showMessageDialog(ventana,
                             "¡Sandbox completado!\nMovimientos: " + stats.movimientos()

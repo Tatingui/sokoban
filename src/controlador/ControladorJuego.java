@@ -48,6 +48,8 @@ public class ControladorJuego {
     /** Se invoca al resolver el nivel, con las estadísticas de la partida. */
     private final Consumer<EstadisticasNivel> alGanarNivel;
 
+    private final Runnable alReiniciar;
+
     /** Pila de snapshots: el tope es el estado ANTES del último movimiento. */
     private final Deque<TableroMemento> historial = new ArrayDeque<>();
 
@@ -67,6 +69,7 @@ public class ControladorJuego {
         this.vista           = vista;
         this.tablero         = tablero;
         this.alGanarNivel    = alGanarNivel;
+        this.alReiniciar     = alReiniciar;
         this.motorMovimiento = new MotorMovimiento(tablero);
         vista.configurarControles(this::procesarTecla);
         vista.configurarPortales(
@@ -96,6 +99,11 @@ public class ControladorJuego {
     private void procesarTecla(int codigoTecla) {
         if (codigoTecla == KeyEvent.VK_Z) {
             deshacerMovimiento();
+            return;
+        }
+        if (codigoTecla == KeyEvent.VK_R) {
+            alReiniciar.run();
+            vista.solicitarFoco();
             return;
         }
 

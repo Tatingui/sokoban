@@ -42,8 +42,7 @@ public class GestorDeNiveles {
 
         if (ventana != null) ventana.dispose();
         ventana = new VentanaPrincipal(tablero, secuencia.numeroActual(), secuencia.total());
-        ventana.setTitle("Sokoban - Nivel " + secuencia.numeroActual() + "/" + secuencia.total()
-                + "   |   [Z] Deshacer");
+        ventana.setTitle("Sokoban - Nivel " + secuencia.numeroActual() + "/" + secuencia.total());
 
         ControladorJuego controlador = new ControladorJuego(ventana, tablero, this::alGanarNivel, this::cargarNivelActual);
         controlador.iniciarJuego();

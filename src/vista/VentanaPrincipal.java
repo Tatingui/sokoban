@@ -25,7 +25,7 @@ public class VentanaPrincipal extends JFrame {
     private final PanelHUD     panelHUD;
 
     public VentanaPrincipal(Tablero tablero, int nivelActual, int totalNiveles) {
-        setTitle("Sokoban - Javaneta  |  [Z] Deshacer");
+        setTitle("Sokoban - Javaneta");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
         setLayout(new BorderLayout());
