@@ -55,6 +55,12 @@ public class VentanaPrincipal extends JFrame {
         panelTablero.configurarPortales(alClickIzquierdo, alClickDerecho);
     }
 
+    /** Conecta los botones de interfaz del HUD */
+    public void configurarBotonesUI(Runnable alDeshacer, Runnable alReiniciar) {
+        panelHUD.setAccionDeshacer(alDeshacer);
+        panelHUD.setAccionReiniciar(alReiniciar);
+    }
+
     /** Fuerza el repintado del área de juego. */
     public void actualizarVista() {
         panelTablero.repaint();

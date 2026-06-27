@@ -4,6 +4,9 @@ import modelo.CalculadoraDePuntaje;
 
 import javax.swing.*;
 import java.awt.*;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
 
 
 public class PanelHUD extends JPanel {
@@ -42,6 +45,12 @@ public class PanelHUD extends JPanel {
     private final JLabel lblRetroValor;
     private final JLabel lblPuntajeValor;
     private final JLabel lblNivelValor;
+    
+    private final JButton btnReiniciar;
+    private final JButton btnDeshacer;
+    
+    // Panel interno para los indicadores para no romper crearIndicador
+    private final JPanel pnlIndicadores;
 
     // ─────────────────────────────────────────────────────────────────────────
     public PanelHUD(int totalDestinos, int pasosPorRetroceso, int nivelActual, int totalNiveles) {
@@ -51,8 +60,11 @@ public class PanelHUD extends JPanel {
         this.totalNiveles      = totalNiveles;
 
         setBackground(COLOR_FONDO);
-        setLayout(new GridLayout(1, 7, 16, 0));  // 7 indicadores
-        setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+        setLayout(new BorderLayout());
+
+        pnlIndicadores = new JPanel(new GridLayout(1, 7, 16, 0));
+        pnlIndicadores.setOpaque(false);
+        pnlIndicadores.setBorder(BorderFactory.createEmptyBorder(8, 16, 4, 16));
 
         lblTiempoValor  = crearIndicador("TIEMPO",      "00:00");
         lblMovValor     = crearIndicador("MOVIMIENTOS", "0");
@@ -62,12 +74,86 @@ public class PanelHUD extends JPanel {
         lblPuntajeValor = crearIndicador("PUNTAJE",     String.valueOf(puntaje));
         lblNivelValor   = crearIndicador("NIVEL",       nivelActual + " / " + totalNiveles);
 
-        lblRetroValor.setForeground(COLOR_ALERTA);  // arranca en rojo: aún no se puede retroceder
+        lblRetroValor.setForeground(COLOR_ALERTA);
 
-        // Timer de Swing: cada segundo refresca tiempo y puntaje (que depende del tiempo).
+        ImageIcon iconAzul = null;
+        ImageIcon iconNaranja = null;
+        try {
+            String dir = System.getProperty("user.dir") + "/public/images/portal/";
+            BufferedImage imgAzul = ImageIO.read(new File(dir + "azulFrente.png"));
+            BufferedImage imgNaranja = ImageIO.read(new File(dir + "naranjaFrente.png"));
+            iconAzul = new ImageIcon(imgAzul.getScaledInstance(24, 24, Image.SCALE_SMOOTH));
+            iconNaranja = new ImageIcon(imgNaranja.getScaledInstance(24, 24, Image.SCALE_SMOOTH));
+        } catch (Exception e) {}
+
+        JLabel lblPortalAzul = new JLabel("Click Izq", iconAzul, SwingConstants.LEFT);
+        lblPortalAzul.setForeground(new Color(100, 200, 255));
+        lblPortalAzul.setFont(new Font("Monospaced", Font.BOLD, 14));
+
+        JLabel lblPortalNaranja = new JLabel("Click Der", iconNaranja, SwingConstants.RIGHT);
+        lblPortalNaranja.setForeground(new Color(255, 150, 50));
+        lblPortalNaranja.setFont(new Font("Monospaced", Font.BOLD, 14));
+        lblPortalNaranja.setHorizontalTextPosition(SwingConstants.LEFT);
+
+        JPanel pnlPortales = new JPanel(new FlowLayout(FlowLayout.CENTER, 40, 0));
+        pnlPortales.setOpaque(false);
+        pnlPortales.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+        pnlPortales.add(lblPortalAzul);
+        pnlPortales.add(lblPortalNaranja);
+
+        JPanel pnlBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        pnlBotones.setOpaque(false);
+        pnlBotones.setBorder(BorderFactory.createEmptyBorder(0, 16, 8, 16));
+        
+        btnDeshacer = new JButton("↶ Deshacer (Z)");
+        estilizarBoton(btnDeshacer, new Color(80, 80, 100));
+        
+        btnReiniciar = new JButton("⟲ Reiniciar Nivel");
+        estilizarBoton(btnReiniciar, new Color(200, 60, 60));
+        
+        pnlBotones.add(btnDeshacer);
+        pnlBotones.add(btnReiniciar);
+
+        JPanel pnlSur = new JPanel(new BorderLayout());
+        pnlSur.setOpaque(false);
+        pnlSur.add(pnlPortales, BorderLayout.NORTH);
+        pnlSur.add(pnlBotones, BorderLayout.SOUTH);
+
+        add(pnlIndicadores, BorderLayout.CENTER);
+        add(pnlSur, BorderLayout.SOUTH);
+
         timerSwing = new Timer(1000, e -> {
             actualizarTiempoUI();
             actualizarPuntaje();
+        });
+    }
+
+    public void setAccionReiniciar(Runnable accion) {
+        btnReiniciar.addActionListener(e -> accion.run());
+    }
+
+    public void setAccionDeshacer(Runnable accion) {
+        btnDeshacer.addActionListener(e -> accion.run());
+    }
+
+    private void estilizarBoton(JButton btn, Color bgColor) {
+        btn.setFocusable(false);
+        btn.setFont(new Font("Monospaced", Font.BOLD, 13));
+        btn.setBackground(bgColor);
+        btn.setForeground(Color.WHITE);
+        btn.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(bgColor.darker(), 1),
+            BorderFactory.createEmptyBorder(6, 12, 6, 12)
+        ));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btn.setBackground(bgColor.brighter());
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                btn.setBackground(bgColor);
+            }
         });
     }
 
@@ -171,7 +257,7 @@ public class PanelHUD extends JPanel {
         panel.add(lblEtiqueta, BorderLayout.NORTH);
         panel.add(lblValor,    BorderLayout.CENTER);
 
-        add(panel);
+        pnlIndicadores.add(panel);
         return lblValor;  // referencia para actualizar después
     }
 

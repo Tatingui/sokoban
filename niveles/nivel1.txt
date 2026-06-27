@@ -1,7 +1,7 @@
-P P P P P P P P
-P J S S S S S P
-P S C S S C S P
-P S S S S S S P
-P S D S S D S P
-P S S S S S S P
-P P P P P P P P
+P P P P P P P P P
+P D P S S S S S P
+P S P C S S J S P
+P S P S S S S S P
+P S P P P P S P P
+P S S S S S S S P
+P P P P P P P P P

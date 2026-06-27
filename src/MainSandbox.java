@@ -29,7 +29,8 @@ public class MainSandbox {
                             "¡Sandbox completado!\nMovimientos: " + stats.movimientos()
                                     + "\nEmpujes: " + stats.empujes()
                                     + "\nUsos de deshacer: " + stats.deshacerUsados()
-                                    + "\nPuntaje: " + stats.puntaje()));
+                                    + "\nPuntaje: " + stats.puntaje()),
+                    () -> {});
             controlador.iniciarJuego();
         });
     }

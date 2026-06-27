@@ -45,7 +45,7 @@ public class GestorDeNiveles {
         ventana.setTitle("Sokoban - Nivel " + secuencia.numeroActual() + "/" + secuencia.total()
                 + "   |   [Z] Deshacer");
 
-        ControladorJuego controlador = new ControladorJuego(ventana, tablero, this::alGanarNivel);
+        ControladorJuego controlador = new ControladorJuego(ventana, tablero, this::alGanarNivel, this::cargarNivelActual);
         controlador.iniciarJuego();
     }
 

@@ -65,41 +65,25 @@ public class MotorMovimiento {
         return ResultadoMovimiento.CAMINATA;
     }
 
-    /**
-     * Teletransporta al jugador por el portal en (fila, columna) hacia {@code direccion}.
-     * Emerge en la celda del portal par mirando hacia afuera de su pared; si esa
-     * celda tiene una caja, la empuja al salir (para poder seguir a la caja que se
-     * mandó por el portal). Devuelve SIN_CAMBIO si no hay par o no se puede emerger.
-     */
     private ResultadoMovimiento teletransportar(int fila, int columna, Direccion direccion) {
         Portal salida = tablero.getGestorDePortales().salidaDesde(fila, columna, direccion);
         if (salida == null) return ResultadoMovimiento.SIN_CAMBIO;
 
         int filaSalida    = salida.fila();
         int columnaSalida = salida.columna();
-        Direccion salidaDir = salida.lado().getOpuesta();   // hacia afuera de la pared
-
-        boolean empujo = false;
-        EntidadDinamica enSalida = tablero.getOcupante(filaSalida, columnaSalida);
-        if (enSalida != null) {
-            // Para emerger, hay que empujar la caja que está en la boca del portal.
-            if (!enSalida.esEmpujable()) return ResultadoMovimiento.SIN_CAMBIO;
-            int filaCaja    = filaSalida + salidaDir.getDeltaFila();
-            int columnaCaja = columnaSalida + salidaDir.getDeltaColumna();
-            if (!tablero.esPosicionValida(filaCaja, columnaCaja)
-                    || !tablero.celdaLibreParaDinamica(filaCaja, columnaCaja)) {
-                return ResultadoMovimiento.SIN_CAMBIO;   // la caja no puede avanzar
-            }
-            enSalida.alSerEmpujada();
-            tablero.moverDinamica(filaSalida, columnaSalida, filaCaja, columnaCaja);
-            if (enSalida.estaRota()) tablero.quitarDinamica(filaCaja, columnaCaja);
-            empujo = true;
+        
+        // Según lo solicitado: Si hay una caja ocupando la salida del portal,
+        // directamente no permitimos el teletransporte para evitar comportamientos anómalos.
+        if (!tablero.celdaLibreParaDinamica(filaSalida, columnaSalida)) {
+            return ResultadoMovimiento.SIN_CAMBIO;
         }
+
+        Direccion salidaDir = salida.lado().getOpuesta();   // hacia afuera de la pared
 
         tablero.moverDinamica(fila, columna, filaSalida, columnaSalida);
         tablero.setPosicionJugador(filaSalida, columnaSalida);
         tablero.getJugador().setMirada(salidaDir);
-        return empujo ? ResultadoMovimiento.EMPUJE : ResultadoMovimiento.CAMINATA;
+        return ResultadoMovimiento.CAMINATA;
     }
 
     /**

@@ -63,7 +63,7 @@ public class ControladorJuego {
     // ─────────────────────────────────────────────────────────────────────────
 
     public ControladorJuego(VentanaPrincipal vista, Tablero tablero,
-                            Consumer<EstadisticasNivel> alGanarNivel) {
+                            Consumer<EstadisticasNivel> alGanarNivel, Runnable alReiniciar) {
         this.vista           = vista;
         this.tablero         = tablero;
         this.alGanarNivel    = alGanarNivel;
@@ -72,6 +72,11 @@ public class ControladorJuego {
         vista.configurarPortales(
                 () -> dispararPortal(ColorPortal.AZUL),
                 () -> dispararPortal(ColorPortal.NARANJA));
+        
+        vista.configurarBotonesUI(
+            () -> { deshacerMovimiento(); vista.solicitarFoco(); },
+            () -> { alReiniciar.run(); vista.solicitarFoco(); }
+        );
     }
 
     // ── API pública ──────────────────────────────────────────────────────────
