@@ -1,7 +1,7 @@
-P P P P P P P P P
-P D P S S S S S P
-P S P C S S J S P
-P S P S S S S S P
-P S P P P P S P P
-P S S S S S S S P
-P P P P P P P P P
+P P P P P P P P P P P
+P D P L-AZUL S S S P D P P
+P S P C S S J P F P P
+P S P S S S S M-AZUL S X-AZUL P
+P S P P P P S P P P P
+P S S S S S S S P P P
+P P P P P P P P P P P
