@@ -84,4 +84,9 @@ public class CasilleroCerrojo extends SueloEspecial {
 
     @Override
     public String getClaveImagen() { return "cerrojo_" + idCanal; }
+    
+    @Override
+    public void registrarEnTablero(Tablero tablero, int fila, int columna) {
+        tablero.getGestorDeCanales().registrarCerrojo(this);
+    }
 }

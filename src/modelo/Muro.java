@@ -62,4 +62,9 @@ public class Muro extends EntidadEstaticaConOcupante implements ObservadorCanal 
     public String getClaveImagen() {
         return (abierto ? "muroAbierto_" : "muroCerrado_") + idCanal;
     }
+
+    @Override
+    public void registrarEnTablero(Tablero tablero, int fila, int columna) {
+        tablero.getGestorDeCanales().registrarMuro(this);
+    }
 }

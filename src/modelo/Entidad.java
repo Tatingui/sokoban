@@ -15,9 +15,9 @@ public abstract class Entidad {
      * Devuelve la entidad dinámica que ocupa esta celda de forma móvil, o
      * {@code null} si no hay ninguna. Permite al {@link MotorMovimiento}
      * consultar el ocupante sin recurrir a {@code instanceof}:
-     *  - una entidad estática común no tiene ocupante → {@code null};
-     *  - un suelo especial devuelve su {@code objetoEncima};
-     *  - una entidad dinámica se devuelve a sí misma.
+     * - una entidad estática común no tiene ocupante → {@code null};
+     * - un suelo especial devuelve su {@code objetoEncima};
+     * - una entidad dinámica se devuelve a sí misma.
      */
     public EntidadDinamica getOcupante() {
         return null;
@@ -38,5 +38,13 @@ public abstract class Entidad {
      */
     public boolean detienePortal() {
         return false;
+    }
+
+    /**
+     * Permite que cada entidad se auto-registre polimórficamente en los 
+     * subsistemas del tablero correspondientes, eliminando el uso de instanceof.
+     */
+    public void registrarEnTablero(Tablero tablero, int fila, int columna) {
+        // Por defecto no hace nada (SueloNormal, Pared, etc.)
     }
 }

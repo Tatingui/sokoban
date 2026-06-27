@@ -29,4 +29,9 @@ public class CintaTransportadora extends SueloEspecial {
     public String getClaveImagen() {
         return "cinta_" + direccion;   // ej: cinta_ARRIBA, cinta_DERECHA
     }
+
+    @Override
+    public void registrarEnTablero(Tablero tablero, int fila, int columna) {
+        tablero.getGestorDeCintas().registrar(fila, columna);
+    }
 }

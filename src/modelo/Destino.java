@@ -69,4 +69,9 @@ public class Destino extends SueloEspecial {
 
     @Override
     public String getClaveImagen() { return "destino"; }
+
+    @Override
+    public void registrarEnTablero(Tablero tablero, int fila, int columna) {
+        tablero.getGestorDeVictoria().registrarDestino(this);   
+}
 }

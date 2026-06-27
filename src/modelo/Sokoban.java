@@ -26,4 +26,11 @@ public class Sokoban extends EntidadDinamica {
             case DERECHA   -> "sokobanDerecha";
         };
     }
+
+    @Override
+    public void registrarEnTablero(Tablero tablero, int fila, int columna) {
+        tablero.setPosicionJugador(fila, columna);
+        tablero.setJugador(this);
 }
+}
+
