@@ -95,6 +95,14 @@ public class ControladorJuego {
             vista.solicitarFoco();
             return;
         }
+        if (codigoTecla == KeyEvent.VK_Q) {
+            dispararPortal(ColorPortal.AZUL);
+            return;
+        }
+        if (codigoTecla == KeyEvent.VK_E) {
+            dispararPortal(ColorPortal.NARANJA);
+            return;
+        }
 
         Direccion direccion = mapearDireccion(codigoTecla);
         if (direccion == null) return;

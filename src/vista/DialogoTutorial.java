@@ -43,8 +43,8 @@ public class DialogoTutorial extends JDialog {
         pnlControles.add(crearFilaControl("Flechas / WASD", "Movimiento de Sokoban"));
         pnlControles.add(crearFilaControl("Z", "Deshacer último movimiento"));
         pnlControles.add(crearFilaControl("R", "Reiniciar nivel completo"));
-        pnlControles.add(crearFilaControl("Click IZQ", "Disparar portal AZUL"));
-        pnlControles.add(crearFilaControl("Click DER", "Disparar portal NARANJA"));
+        pnlControles.add(crearFilaControl("Q / Click IZQ", "Disparar portal AZUL"));
+        pnlControles.add(crearFilaControl("E / Click DER", "Disparar portal NARANJA"));
 
         // RIGHT: Entidades
         JPanel pnlEntidades = new JPanel();
