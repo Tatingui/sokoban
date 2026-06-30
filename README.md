@@ -4,22 +4,32 @@ Proyecto de desarrollo para la asignatura Proceso de Desarrollo de Software (UAD
 
 ## Arquitectura y Patrones Creacionales Aplicados
 
-El proyecto se encuentra dividido en los paquetes `modelo`, `vista`, `controlador` y `utilidades` respetando estrictamente el patrón arquitectónico MVC. Para la inicialización del juego se implementó una infraestructura creacional compuesta por:
-* **Singleton:** Aplicado en la fábrica para garantizar un único punto de acceso y evitar instancias repetidas en memoria.
-* **Factory Method:** Centraliza la lógica de conversión de caracteres en entidades del modelo.
-* **Builder:** Separa la lectura e interpretación del archivo de texto plano de la representación final del objeto complejo Tablero.
+El proyecto se encuentra dividido en los paquetes `modelo`, `vista`, `controlador`, `utilidades` y `sonido` respetando estrictamente el patrón arquitectónico MVC. Para la inicialización del juego se implementó una infraestructura creacional compuesta por:
+* **Singleton:** Aplicado en `FabricaDeEntidades` (y también en `GestorDeSonido`) para garantizar un único punto de acceso y evitar instancias repetidas en memoria.
+* **Simple Factory:** Centraliza la lógica de conversión de tokens en entidades del modelo.
+* **Builder:** Separa la lectura e interpretación del archivo de texto plano (`LectorDeNivel`) de la representación final del objeto complejo Tablero (`DirectorDeTablero` + `ConstructorTablero`).
 
-## Patrón de Comportamiento Aplicado
+## Patrones de Comportamiento Aplicados
+
+### Observer
 
 Para el sistema de llaves, cerrojos y muros se aplicó el patrón **Observer**, desacoplando los muros de la lógica que decide cuándo deben abrirse:
 
 * **`Canal` (Subject):** Agrupa los cerrojos y muros de un mismo canal identificado (ej: `AZUL`). Reevalúa su estado ante cada cambio y notifica únicamente cuando hay una transición real (abrir/cerrar), evitando notificaciones redundantes.
 * **`ObservadorCanal` (Observer):** Interfaz con `alAbrirCanal()` / `alCerrarCanal()`.
 * **`Muro` (Concrete Observer):** Muta su transitabilidad al ser notificado. Una única clase con estado reemplaza a las antiguas `MuroCerrado` y `MuroAbierto`, eliminando la duplicación.
-* **`CasilleroCerrojo`:** Reporta su activación al canal cuando se le coloca encima una `CajaLlave` del mismo canal. Soporta modo exclusivo.
-* **`GestorDeCanales`:** Centraliza los canales del tablero (`cerrojosPorCanal` / `murosPorCanal`) y coordina la supresión de otros canales en los cerrojos exclusivos.
+* **`CasilleroCerrojo`:** Reporta su activación al canal cuando se le coloca encima una `CajaLlave` del mismo canal.
+* **`GestorDeCanales`:** Centraliza los canales del tablero (un canal por id) y cablea cada cerrojo/muro al `Canal` que les corresponde.
 
-Regla de apertura: un canal abre sus muros sólo cuando **todos** sus cerrojos están activados; si un cerrojo se desactiva, los muros vuelven a cerrarse.
+Regla de apertura: un canal abre sus muros sólo cuando **todos** sus cerrojos están activados; si un cerrojo se desactiva, los muros vuelven a cerrarse. Una llave comodín (`L-MULTI`) activa cualquier cerrojo, por lo que "una sola puerta abierta a la vez" emerge naturalmente al moverla entre cerrojos, sin necesidad de un modo exclusivo aparte.
+
+### Memento
+
+El botón de deshacer se implementa con el patrón **Memento**:
+
+* **`Tablero` (Originator):** `guardarEstado()` produce un `TableroMemento` inmutable con la posición/mirada del jugador y el estado de cajas, cerrojos y muros; `restaurarEstado(...)` lo aplica de forma silenciosa, sin disparar las notificaciones del Observer durante la restauración.
+* **`TableroMemento` (Memento):** snapshot inmutable del estado del tablero.
+* **`HistorialDeMovimientos` (Caretaker, en `controlador`):** apila los snapshots (hasta 15) y retrocede de a 5 pasos por pulsación, sin conocer el contenido del memento.
 
 ## Guía para la Creación de Mapas Propios
 
@@ -47,6 +57,8 @@ Cada celda se escribe como un token separado por espacios. Los tokens simples so
 
 > Nota: `Muro` es una única entidad con estado. El mismo objeto pasa de cerrado a abierto cuando su canal se activa (patrón Observer); no son dos clases distintas.
 
+> Nota: los **portales** (estilo Portal, disparados con click izquierdo/derecho en la dirección hacia la que mira Sokoban) **no** se definen con un token en el mapa: se crean en tiempo de ejecución y viven en la arista de una celda, manejados por `GestorDePortales`.
+
 ### Requisito importante para mapas personalizados:
 Todos los archivos de nivel deben guardarse dentro del directorio `/niveles`. Además, para evitar errores de desbordamiento en la matriz, el mapa debe ser **perfectamente rectangular** (todas las filas deben poseer exactamente la misma cantidad de tokens, separados por un solo espacio). 
 
@@ -56,7 +68,7 @@ Para que el juego cargue tu propio mapa, podés simplemente reemplazar el conten
 
 Requisito común: tener instalado un **JDK 17 o superior** (el proyecto se valida con JDK 21).
 
-> Importante: `Main.java` resuelve las rutas de niveles e imágenes como `user.dir + "/sokoban/..."`, por lo que el **directorio de trabajo del proceso debe ser la carpeta que contiene al repositorio** (la carpeta padre de `sokoban`).
+> Importante: `Main.java` y las clases de `vista`/`sonido` resuelven las rutas de niveles, imágenes y sonidos como `user.dir + "/niveles/..."` y `user.dir + "/public/..."`, por lo que el **directorio de trabajo del proceso debe ser la raíz del repositorio** (la carpeta que contiene directamente a `niveles/` y `public/`).
 
 ### IntelliJ IDEA
 1. Clonar el repositorio y abrirlo en IntelliJ IDEA.
