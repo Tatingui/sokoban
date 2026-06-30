@@ -66,35 +66,31 @@ public class MotorMovimiento {
     }
 
     private ResultadoMovimiento teletransportar(int fila, int columna, Direccion direccion) {
-        Portal salida = tablero.getGestorDePortales().salidaDesde(fila, columna, direccion);
+        // Si hay una caja ocupando la salida del portal, no permitimos el
+        // teletransporte para evitar comportamientos anómalos (salidaLibre lo filtra).
+        Portal salida = salidaLibre(fila, columna, direccion);
         if (salida == null) return ResultadoMovimiento.SIN_CAMBIO;
-
-        int filaSalida    = salida.fila();
-        int columnaSalida = salida.columna();
-        
-        // Según lo solicitado: Si hay una caja ocupando la salida del portal,
-        // directamente no permitimos el teletransporte para evitar comportamientos anómalos.
-        if (!tablero.celdaLibreParaDinamica(filaSalida, columnaSalida)) {
-            return ResultadoMovimiento.SIN_CAMBIO;
-        }
 
         Direccion salidaDir = salida.lado().getOpuesta();   // hacia afuera de la pared
 
-        tablero.moverDinamica(fila, columna, filaSalida, columnaSalida);
-        tablero.setPosicionJugador(filaSalida, columnaSalida);
+        tablero.moverDinamica(fila, columna, salida.fila(), salida.columna());
+        tablero.setPosicionJugador(salida.fila(), salida.columna());
         tablero.getJugador().setMirada(salidaDir);
         return ResultadoMovimiento.CAMINATA;
     }
 
     /**
-     * Si en (fila, columna) hay un portal hacia {@code direccion} con par y su
-     * celda de salida está libre, devuelve esa celda; si no, {@code null}.
+     * Portal de salida utilizable para una entrada en (fila, columna) hacia
+     * {@code direccion}: existe el portal, tiene par y su celda de salida está
+     * libre para una dinámica. Devuelve {@code null} si no se cumple alguna.
+     * Centraliza la regla compartida por el jugador ({@link #teletransportar})
+     * y por las cajas ({@link #empujarCaja}).
      */
-    private Posicion salidaPortal(int fila, int columna, Direccion direccion) {
+    private Portal salidaLibre(int fila, int columna, Direccion direccion) {
         Portal salida = tablero.getGestorDePortales().salidaDesde(fila, columna, direccion);
         if (salida == null) return null;
         if (!tablero.celdaLibreParaDinamica(salida.fila(), salida.columna())) return null;
-        return new Posicion(salida.fila(), salida.columna());
+        return salida;
     }
 
     private boolean empujarCaja(int filaCaja, int columnaCaja, Direccion direccion) {
@@ -110,8 +106,9 @@ public class MotorMovimiento {
             destinoCaja = new Posicion(filaAdyacente, columnaAdyacente);
             porPortal   = false;
         } else {
-            destinoCaja = salidaPortal(filaCaja, columnaCaja, direccion);
-            if (destinoCaja == null) return false;
+            Portal salida = salidaLibre(filaCaja, columnaCaja, direccion);
+            if (salida == null) return false;
+            destinoCaja = new Posicion(salida.fila(), salida.columna());
             porPortal   = true;
         }
 

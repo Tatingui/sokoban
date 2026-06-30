@@ -79,6 +79,24 @@ Esta sección es clave para defender el proyecto: muestra criterio, no "patrón 
   `MotorMovimiento`. State se justifica cuando el comportamiento difiere por estado;
   no es el caso.
 
+- **Portal → subsistema (`GestorDePortales`), NO Strategy de suelo.**
+  El portal *desplaza* al jugador, igual que hielo y cinta, pero **no** es un caso
+  de `EstrategiaDeSuelo` y forzarlo lo sería "patrón porque sí". Tres motivos:
+  1. **Cardinalidad.** La estrategia se resuelve con `estrategiaSueloEn(fila, columna)`
+     → **una por celda**. El portal vive en la **arista** `(fila, columna, lado)`:
+     una misma celda puede tener portales en lados distintos, lo que no entra en
+     "una estrategia por `Entidad`".
+  2. **Ciclo de vida y par.** Las estrategias de suelo son estáticas, se crean al
+     armar el nivel y son locales. El portal se dispara **en runtime** (mouse), es
+     **global** (máx. 2) y está **emparejado** (azul↔naranja): teletransportar exige
+     conocer al par, estado global que una estrategia per-celda no tiene dónde alojar.
+  3. **Momento.** El suelo reacciona a "llegué" (`alLlegar`) o "cerró el turno"
+     (`alResolverTurno`); el portal actúa **en lugar de un movimiento bloqueado**
+     contra una pared — intercepta la resolución del movimiento, no reacciona al piso.
+  Por eso el eje del diseño no es "todo lo que desplaza → Strategy", sino: **efecto
+  reactivo por celda → Strategy** (hielo, cinta); **intercepción global del
+  movimiento con estado emparejado → subsistema** (portal).
+
 - **Gestores por composición, NO Singleton** (`GestorDeCanales`, `GestorDeVictoria`,
   `GestorDeCintas`, `GestorDePortales`). Tienen **estado del nivel**, así que hay
   **una instancia por `Tablero`** (compuesta, no global). Hacerlos Singleton rompería
