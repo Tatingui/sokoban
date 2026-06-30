@@ -10,36 +10,25 @@ import sonido.GestorDeSonido;
 import vista.VentanaPrincipal;
 
 import java.awt.event.KeyEvent;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.function.Consumer;
 
 /**
- * ControladorJuego — Caretaker del patrón GoF Memento y coordinador MVC.
+ * ControladorJuego — coordinador MVC. El Caretaker del patrón GoF Memento es
+ * {@link HistorialDeMovimientos}, al que este controlador delega por completo
+ * el almacenamiento y descarte de snapshots.
  *
- * Responsabilidades como Caretaker:
- *  - Mantiene el historial de snapshots (máximo {@link #LIMITE_HISTORIAL} movimientos).
- *  - Antes de cada movimiento exitoso: solicita un snapshot al Originator (Tablero)
- *    y lo apila.
- *  - Al recibir la tecla de undo: retrocede {@link #PASOS_POR_RETROCESO} pasos de
- *    una sola vez y pide al Tablero que restaure ese estado. Si hay menos de 5
- *    snapshots no hace nada (no hay retroceso parcial). Con tope 15 y salto de 5,
- *    se pueden hacer como máximo 3 undos seguidos.
- *  - Mantiene {@link #contadorMovimientos} y lo sincroniza con el HUD tras cada
- *    operación (movimiento o undo).
- *
- * Responsabilidades MVC:
+ * Responsabilidades:
  *  - Captura el input de teclado y lo traduce a comandos de dominio.
  *  - Delega el movimiento a {@link MotorMovimiento}.
+ *  - Antes de cada movimiento exitoso: solicita un snapshot al Originator
+ *    (Tablero) y lo entrega al {@link HistorialDeMovimientos} para que lo apile.
+ *  - Al recibir la tecla de undo: le pide al historial el snapshot al que
+ *    retroceder y, si existe, ordena al Tablero que lo restaure.
+ *  - Mantiene {@link #contadorMovimientos} y lo sincroniza con el HUD tras cada
+ *    operación (movimiento o undo).
  *  - Ordena a la vista que se repinte cuando el modelo cambia.
  */
 public class ControladorJuego {
-
-    /** Máximo de movimientos que se pueden deshacer (snapshots guardados). */
-    public static final int LIMITE_HISTORIAL = 15;
-
-    /** Pasos que retrocede cada pulsación del botón de undo. */
-    public static final int PASOS_POR_RETROCESO = 5;
 
     private final VentanaPrincipal vista;
     private final Tablero          tablero;
@@ -50,8 +39,8 @@ public class ControladorJuego {
 
     private final Runnable alReiniciar;
 
-    /** Pila de snapshots: el tope es el estado ANTES del último movimiento. */
-    private final Deque<TableroMemento> historial = new ArrayDeque<>();
+    /** Caretaker del Memento: guarda y descarta los snapshots del Tablero. */
+    private final HistorialDeMovimientos historial = new HistorialDeMovimientos();
 
     /** Número de movimientos realizados en la partida actual. */
     private int contadorMovimientos = 0;
@@ -133,7 +122,7 @@ public class ControladorJuego {
                 sonido.cajaEnDestino();
             }
 
-            apilarSnapshot(snapshot);
+            historial.apilar(snapshot);
             sincronizarHUD();
             vista.actualizarVista();
             if (tablero.nivelResuelto()) {
@@ -173,20 +162,16 @@ public class ControladorJuego {
         alGanarNivel.accept(stats);
     }
 
-    // ── Caretaker: undo ───────────────────────────────────────────────────────
+    // ── Undo ──────────────────────────────────────────────────────────────────
 
     /**
-     * Retrocede exactamente {@link #PASOS_POR_RETROCESO} pasos de una sola vez:
-     * desapila 5 snapshots y restaura el tablero al más antiguo de ellos. No hace
-     * nada si quedan menos de 5 snapshots en el historial (no hay retroceso parcial).
+     * Le pide al {@link HistorialDeMovimientos} el snapshot al que retroceder
+     * (5 pasos de una sola vez) y, si existe, ordena al Tablero que lo restaure.
+     * No hace nada si el historial no tiene suficientes snapshots aún.
      */
     private void deshacerMovimiento() {
-        if (historial.size() < PASOS_POR_RETROCESO) return;
-
-        TableroMemento objetivo = null;
-        for (int i = 0; i < PASOS_POR_RETROCESO; i++) {
-            objetivo = historial.pop();
-        }
+        TableroMemento objetivo = historial.retroceder();
+        if (objetivo == null) return;
 
         tablero.restaurarEstado(objetivo);
         contadorMovimientos = objetivo.getContadorMovimientos();
@@ -196,17 +181,6 @@ public class ControladorJuego {
     }
 
     // ── Helpers privados ─────────────────────────────────────────────────────
-
-    /**
-     * Apila un snapshot, respetando el límite de historial.
-     * Si se supera el límite se elimina el snapshot más antiguo (FIFO del fondo).
-     */
-    private void apilarSnapshot(TableroMemento snapshot) {
-        if (historial.size() >= LIMITE_HISTORIAL) {
-            historial.pollLast();  // descarta el más antiguo
-        }
-        historial.push(snapshot);  // apila al frente (más reciente)
-    }
 
     /** Propaga el estado de los contadores y el historial al HUD de la vista. */
     private void sincronizarHUD() {
