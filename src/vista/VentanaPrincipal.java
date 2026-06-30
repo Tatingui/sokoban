@@ -1,7 +1,7 @@
 package vista;
 
 import modelo.Tablero;
-import controlador.ControladorJuego;
+import controlador.HistorialDeMovimientos;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -32,7 +32,7 @@ public class VentanaPrincipal extends JFrame {
 
         int totalDestinos = tablero.getGestorDeVictoria().getTotalDestinos();
 
-        panelHUD     = new PanelHUD(totalDestinos, ControladorJuego.PASOS_POR_RETROCESO,
+        panelHUD     = new PanelHUD(totalDestinos, HistorialDeMovimientos.PASOS_POR_RETROCESO,
                                     nivelActual, totalNiveles);
         panelTablero = new PanelTablero(tablero);
 
