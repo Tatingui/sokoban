@@ -184,7 +184,7 @@ public class ControladorJuego {
 
     /** Propaga el estado de los contadores y el historial al HUD de la vista. */
     private void sincronizarHUD() {
-        int retrocesosDisponibles = historial.size();
+        int retrocesosDisponibles = historial.getsize();
         int cajasEnDestino        = tablero.getCajasEnDestino();
         vista.actualizarHUD(contadorMovimientos, contadorEmpujes, retrocesosDisponibles,
                             contadorDeshacer, cajasEnDestino);
