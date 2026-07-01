@@ -2,6 +2,10 @@
 
 Proyecto de desarrollo para la asignatura Proceso de Desarrollo de Software (UADE). Este sistema implementa el clásico juego Sokoban enfocando su diseño en la correcta aplicación de patrones de diseño GoF, principios SOLID y la arquitectura estructural Modelo-Vista-Controlador (MVC).
 
+ACLARACION PARA PROFE PEPE
+Nos motivo mucho el desarrollo de este proyecto, y lo quisimos seguir por fuera de la materia. Para no romper lo que hoy funciona, creamos la rama llamada "Avance en paralelo a PDS", en la que estamos agregandole algunas implementaciones quiza poco cristianas ante los fundamentos de la materia de Proceso Desarrollo de Software.
+La rama "main" tiene la version que usted tiene que importar y probar, ya que esa misma es la que lleva la ultima version de lo que fue acomplejado para la entrega de nuestro TPI. 
+
 ## Arquitectura y Patrones Creacionales Aplicados
 
 El proyecto se encuentra dividido en los paquetes `modelo`, `vista`, `controlador` y `utilidades` respetando estrictamente el patrón arquitectónico MVC. Para la inicialización del juego se implementó una infraestructura creacional compuesta por:
